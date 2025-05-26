@@ -1,0 +1,24 @@
+server:
+  port: 8080
+  mode: debug
+
+database:
+  driver: postgres
+  host: postgres
+  port: 5432
+  username: admin
+  password: password
+  db_name: go_admin
+  sslmode: disable
+  max_idle_conns: 10
+  max_open_conns: 100
+
+jwt:
+  secret: your-secret-key-here
+  expire: 24 # 小时
+  issuer: go-admin
+
+logger:
+  level: info
+  format: json
+  output: stdout
