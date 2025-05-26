@@ -1,0 +1,64 @@
+# 项目根目录
+root = "."
+
+# 用于缓存测试数据
+testdata_dir = "testdata"
+
+# 编译中间产物存放路径（可选）
+tmp_dir = "tmp"
+
+[build]
+  # 构建后的可执行文件
+  bin = "./bin/server"
+
+  # 构建命令：以 ./cmd/server 为主程序入口
+  cmd = "go build -o ./bin/server ./cmd/server"
+
+  # 构建延迟（毫秒），防抖避免频繁重启
+  delay = 1000
+
+  # 排除这些目录的监听
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "bin", "deployments"]
+
+  # 排除测试文件
+  exclude_regex = ["_test.go"]
+
+  # 监听的文件扩展名
+  include_ext = ["go", "yaml", "yml"]
+
+  # 编译错误日志文件
+  log = "build-errors.log"
+
+  # 是否跟踪符号链接
+  follow_symlink = false
+
+  # 使用完整路径覆盖构建（推荐）
+  full_bin = "true"
+
+  # 热重载后延迟重新运行的时间
+  rerun_delay = 500
+
+  # 构建出错是否中止
+  stop_on_error = false
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = true
+
+[misc]
+  clean_on_exit = false
+
+[proxy]
+  enabled = false
+
+[screen]
+  clear_on_rebuild = true
+  keep_scroll = true
