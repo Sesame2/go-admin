@@ -22,7 +22,7 @@ type ServerConfig struct {
 type DatabaseConfig struct {
 	Driver       string `mapstructure:"driver"`
 	Host         string `mapstructure:"host"`
-	Port         string `mapstructure:"port"`
+	Port         int `mapstructure:"port"`
 	Username     string `mapstructure:"username"`
 	Password     string `mapstructure:"password"`
 	DBName       string `mapstructure:"db_name"`
