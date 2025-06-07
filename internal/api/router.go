@@ -11,6 +11,17 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// API服务结构
+type API struct {
+	UserController controller.UserController
+}
+
+func NewAPI(userController controller.UserController) *API {
+	return &API{
+		UserController: userController,
+	}
+}
+
 func CallRoot(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "欢迎访问用户管理系统 API",
@@ -18,7 +29,7 @@ func CallRoot(c *gin.Context) {
 	})
 }
 
-func SetupRouter(userController controller.UserController) *gin.Engine {
+func (api *API) SetupRouter() *gin.Engine {
 	r := gin.Default()
 
 	// Swagger UI
@@ -27,9 +38,9 @@ func SetupRouter(userController controller.UserController) *gin.Engine {
 	// // 用户相关路由
 	userGroup := r.Group("/api/users")
 	{
-		userGroup.GET("/", userController.GetAllUser)
-		userGroup.GET("/:id", userController.GetUser)
-		userGroup.POST("/", userController.CreateUser)
+		userGroup.GET("/", api.UserController.GetAllUser)
+		userGroup.GET("/:id", api.UserController.GetUser)
+		userGroup.POST("/", api.UserController.CreateUser)
 	}
 	return r
 }

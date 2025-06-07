@@ -46,8 +46,11 @@ func New(cfg *config.Config) (*Application, error) {
 	// 初始化控制器层
 	userController := controller.NewUserController(userService)
 
+	// 初始化api服务
+	apiService := api.NewAPI(*userController)
+
 	// 初始化路由
-	router := api.SetupRouter(*userController)
+	router := apiService.SetupRouter()
 
 	// 设置生产环境下的模式
 	if cfg.Server.Mode == "release" {
