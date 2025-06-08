@@ -44,6 +44,15 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
+// CreateUser 创建用户
+// @Summary 创建新用户
+// @Description 接收用户信息并创建用户记录
+// @Tags 用户模块
+// @Accept json
+// @Produce json
+// @Param data body dto.CreateUserInput true "用户信息"
+// @Success 200 {object} ent.User "创建成功，返回用户信息"
+// @Router /users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	// 创建输入结构体
 	var input dto.CreateUserInput
@@ -55,7 +64,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 	}
 	user, err := c.service.CreateUser(ctx, &input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "服务器内部错误", "details": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, user)
