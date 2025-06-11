@@ -9,6 +9,7 @@ type CreateUserInput struct {
 
 // UpdateUserInput 用户更新输入
 type UpdateUserInput struct {
-	Username string  `json:"username" binding:"required,min=3,max=50"`
+	Username *string `json:"username,omitempty" binding:"omitempty,min=3,max=50"`
 	Email    *string `json:"email,omitempty" binding:"omitempty,email"`
+	Password *string `json:"password,omitempty" binding:"omitempty,min=6,max=100"`
 }

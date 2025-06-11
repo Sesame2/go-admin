@@ -16,6 +16,19 @@ definitions:
     - password
     - username
     type: object
+  dto.UpdateUserInput:
+    properties:
+      email:
+        type: string
+      password:
+        maxLength: 100
+        minLength: 6
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    type: object
   ent.User:
     properties:
       email:
@@ -44,11 +57,20 @@ paths:
     get:
       consumes:
       - application/json
-      description: 获取单个用户的信息
+      description: 获取系统中所有用户的列表
       produces:
       - application/json
-      responses: {}
-      summary: 获取用户信息
+      responses:
+        "200":
+          description: 返回用户列表
+          schema:
+            properties:
+              data:
+                items:
+                  $ref: '#/definitions/ent.User'
+                type: array
+            type: object
+      summary: 获取所有用户
       tags:
       - 用户模块
     post:
@@ -70,6 +92,74 @@ paths:
           schema:
             $ref: '#/definitions/ent.User'
       summary: 创建新用户
+      tags:
+      - 用户模块
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据用户ID获取特定用户的详细信息
+      parameters:
+      - description: 用户ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户详细信息
+          schema:
+            $ref: '#/definitions/ent.User'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: 用户不存在
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 获取单个用户信息
+      tags:
+      - 用户模块
+    put:
+      consumes:
+      - application/json
+      description: 更新用户的各种信息，支持部分字段更新
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 用户更新信息
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ent.User'
+      summary: 更新用户信息
       tags:
       - 用户模块
 swagger: "2.0"

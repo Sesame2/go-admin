@@ -41,6 +41,7 @@ func (api *API) SetupRouter() *gin.Engine {
 		userGroup.GET("/", api.UserController.GetAllUser)
 		userGroup.GET("/:id", api.UserController.GetUser)
 		userGroup.POST("/", api.UserController.CreateUser)
+		userGroup.PUT("/:id", api.UserController.UpdateUser)
 	}
 	return r
 }
