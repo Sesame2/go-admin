@@ -23,3 +23,7 @@ build:
 run:
 	@echo "启动应用"
 	./bin/$(APP_NAME)
+
+ent-gen:
+	@echo "生成Ent代码"
+	go generate ./internal/models/ent
