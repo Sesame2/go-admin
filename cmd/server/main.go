@@ -3,6 +3,11 @@
 // @description 用于用户增删改查的 RESTful API
 // @host localhost:8080
 // @BasePath /api
+
+//  @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description 请输入 'Bearer ' + JWT 令牌，例如: "Bearer abcde12345"
 package main
 
 import (

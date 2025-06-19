@@ -42,12 +42,14 @@ func New(cfg *config.Config) (*Application, error) {
 
 	// 初始化服务层
 	userService := services.NewUserService(userDAO)
+	authService := services.NewAuthService(userDAO, cfg)
 
 	// 初始化控制器层
 	userController := controller.NewUserController(userService)
+	authController := controller.NewAuthController(authService)
 
 	// 初始化api服务
-	apiService := api.NewAPI(*userController)
+	apiService := api.NewAPI(cfg, userController, authController)
 
 	// 初始化路由
 	router := apiService.SetupRouter()

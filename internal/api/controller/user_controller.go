@@ -25,6 +25,7 @@ func NewUserController(service *services.UserService) *UserController {
 // @Tags         用户模块
 // @Accept       json
 // @Produce      json
+// @Security     Bearer
 // @Param        id   path      string  true  "用户ID (UUID格式)"
 // @Success      200  {object}  ent.User       "用户详细信息"
 // @Failure      400  {object}  object{error=string}  "请求参数错误"
@@ -62,6 +63,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Tags 用户模块
 // @Accept json
 // @Produce json
+// @Security     Bearer
 // @Param data body dto.CreateUserInput true "用户信息"
 // @Success 200 {object} ent.User "创建成功，返回用户信息"
 // @Router /users [post]
@@ -88,6 +90,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Tags         用户模块
 // @Accept       json
 // @Produce      json
+// @Security     Bearer
 // @Success      200  {object}  object{data=[]ent.User}  "返回用户列表"
 // @Router       /users [get]
 func (c *UserController) GetAllUser(ctx *gin.Context) {
@@ -108,6 +111,7 @@ func (c *UserController) GetAllUser(ctx *gin.Context) {
 // @Tags         用户模块
 // @Accept       json
 // @Produce      json
+// @Security     Bearer
 // @Param        id   path      string  true  "用户ID"
 // @Param        user body      dto.UpdateUserInput  true  "用户更新信息"
 // @Success      200  {object}  ent.User

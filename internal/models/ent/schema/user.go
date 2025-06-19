@@ -29,6 +29,11 @@ func (User) Fields() []ent.Field {
 
 		field.String("password").
 			NotEmpty(),
+
+		field.String("role").
+			NotEmpty().
+			Default("user").
+			Comment("用户角色"),
 	}
 }
 

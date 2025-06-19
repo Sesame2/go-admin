@@ -7,12 +7,30 @@ definitions:
       password:
         minLength: 6
         type: string
+      role:
+        type: string
       username:
         maxLength: 50
         minLength: 3
         type: string
     required:
     - email
+    - password
+    - role
+    - username
+    type: object
+  dto.LoginInput:
+    properties:
+      password:
+        example: test123
+        minLength: 6
+        type: string
+      username:
+        example: test
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
     - password
     - username
     type: object
@@ -42,6 +60,9 @@ definitions:
       password:
         description: Password holds the value of the "password" field.
         type: string
+      role:
+        description: 用户角色
+        type: string
       username:
         description: Username holds the value of the "username" field.
         type: string
@@ -53,6 +74,45 @@ info:
   title: 用户管理系统 API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 验证用户凭据并返回JWT令牌
+      parameters:
+      - description: 登录凭据
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功返回令牌
+          schema:
+            properties:
+              token:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: 认证失败
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 用户登录
+      tags:
+      - 认证
   /users:
     get:
       consumes:
@@ -70,6 +130,8 @@ paths:
                   $ref: '#/definitions/ent.User'
                 type: array
             type: object
+      security:
+      - Bearer: []
       summary: 获取所有用户
       tags:
       - 用户模块
@@ -91,6 +153,8 @@ paths:
           description: 创建成功，返回用户信息
           schema:
             $ref: '#/definitions/ent.User'
+      security:
+      - Bearer: []
       summary: 创建新用户
       tags:
       - 用户模块
@@ -133,6 +197,8 @@ paths:
               error:
                 type: string
             type: object
+      security:
+      - Bearer: []
       summary: 获取单个用户信息
       tags:
       - 用户模块
@@ -159,7 +225,15 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ent.User'
+      security:
+      - Bearer: []
       summary: 更新用户信息
       tags:
       - 用户模块
+securityDefinitions:
+  Bearer:
+    description: '请输入 ''Bearer '' + JWT 令牌，例如: "Bearer abcde12345"'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

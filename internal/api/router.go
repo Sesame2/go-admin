@@ -5,6 +5,8 @@ import (
 
 	_ "github.com/Sesame2/go-admin/docs"
 	"github.com/Sesame2/go-admin/internal/api/controller"
+	"github.com/Sesame2/go-admin/internal/config"
+	"github.com/Sesame2/go-admin/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -13,12 +15,16 @@ import (
 
 // API服务结构
 type API struct {
-	UserController controller.UserController
+	UserController *controller.UserController
+	AuthController *controller.AuthController
+	Config         *config.Config
 }
 
-func NewAPI(userController controller.UserController) *API {
+func NewAPI(config *config.Config, userController *controller.UserController, authController *controller.AuthController) *API {
 	return &API{
 		UserController: userController,
+		AuthController: authController,
+		Config:         config,
 	}
 }
 
@@ -37,11 +43,17 @@ func (api *API) SetupRouter() *gin.Engine {
 	r.GET("/", CallRoot)
 	// // 用户相关路由
 	userGroup := r.Group("/api/users")
+	authGroup := r.Group("/api/auth")
+	userGroup.Use(middleware.JWTAuthMiddleware(api.Config.JWT.SecretKey))
 	{
 		userGroup.GET("/", api.UserController.GetAllUser)
 		userGroup.GET("/:id", api.UserController.GetUser)
 		userGroup.POST("/", api.UserController.CreateUser)
 		userGroup.PUT("/:id", api.UserController.UpdateUser)
+
+		authGroup.POST("/login", api.AuthController.Login)
 	}
+	
+	
 	return r
 }

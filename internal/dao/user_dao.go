@@ -31,6 +31,7 @@ func (d *UserDAO) Create(ctx context.Context, input *dto.CreateUserInput) (*ent.
 		SetUsername(input.Username).
 		SetEmail(input.Email).
 		SetPassword(input.Password).
+		SetRole(input.Role).
 		Save(ctx)
 }
 
@@ -52,4 +53,10 @@ func (d *UserDAO) UpdateUser(ctx context.Context, id uuid.UUID, input *dto.Updat
 
 func (d *UserDAO) Exist(ctx context.Context, id uuid.UUID) (bool, error) {
 	return d.db.Client().User.Query().Where(user.ID(id)).Exist(ctx)
+}
+
+func (d *UserDAO) GetByUserName(ctx context.Context, username string) (*ent.User, error) {
+	return d.db.Client().User.Query().
+		Where(user.UsernameEQ(username)).
+		Only(ctx)
 }
