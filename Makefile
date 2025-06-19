@@ -1,7 +1,7 @@
 MAIN_PATH := ./cmd/server/main.go
 APP_NAME := server
 
-.PHONY: swag air clean build air
+.PHONY: swag air clean build run ent-gen
 
 # 生成swagger文档
 swag:
