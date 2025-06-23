@@ -7,6 +7,7 @@ import (
 	"github.com/Sesame2/go-admin/internal/api/controller"
 	"github.com/Sesame2/go-admin/internal/config"
 	"github.com/Sesame2/go-admin/internal/middleware"
+	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -35,10 +36,11 @@ func CallRoot(c *gin.Context) {
 	})
 }
 
-func (api *API) SetupRouter() *gin.Engine {
+func (api *API) SetupRouter(logger *zap.Logger) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(middleware.CORS())
+	r.Use(middleware.LoggerMiddleware(logger))
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/", CallRoot)

@@ -9,14 +9,20 @@ import (
 	"github.com/Sesame2/go-admin/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type UserController struct {
 	service *services.UserService
+	logger  *zap.Logger
 }
 
-func NewUserController(service *services.UserService) *UserController {
-	return &UserController{service: service}
+func NewUserController(service *services.UserService, logger *zap.Logger) *UserController {
+	logger = logger.With(zap.String("component", "UserController"))
+	return &UserController{
+		service: service,
+		logger:  logger,
+	}
 }
 
 // GetUser godoc

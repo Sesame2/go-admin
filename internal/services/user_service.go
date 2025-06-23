@@ -9,24 +9,32 @@ import (
 	"github.com/Sesame2/go-admin/internal/models/dto"
 	"github.com/Sesame2/go-admin/internal/models/ent"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
-	dao *dao.UserDAO
+	dao    *dao.UserDAO
+	logger *zap.Logger
 }
 
-func NewUserService(dao *dao.UserDAO) *UserService {
-	return &UserService{dao: dao}
+func NewUserService(dao *dao.UserDAO, logger *zap.Logger) *UserService {
+	logger = logger.With(zap.String("component", "Userservice"))
+	return &UserService{
+		dao:    dao,
+		logger: logger,
+	}
 }
 
 func (s *UserService) ListUsers(ctx context.Context) ([]*ent.User, error) {
+	s.logger.Info("获取所有用户")
 	return s.dao.GetAll(ctx)
 }
 
 func (s *UserService) GetUser(ctx context.Context, id uuid.UUID) (*ent.User, error) {
 	exist, err := s.dao.Exist(ctx, id)
 	if err != nil {
+		s.logger.Error("检查用户是否存在出错", zap.Error(err))
 		return nil, fmt.Errorf("检查用户是否存在出错：%w", err)
 	}
 	if !exist {

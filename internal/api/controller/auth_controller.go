@@ -6,15 +6,19 @@ import (
 	"github.com/Sesame2/go-admin/internal/models/dto"
 	"github.com/Sesame2/go-admin/internal/services"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type AuthController struct {
 	service *services.AuthService
+	logger  *zap.Logger
 }
 
-func NewAuthController(service *services.AuthService) *AuthController {
+func NewAuthController(service *services.AuthService, logger *zap.Logger) *AuthController {
+	logger = logger.With(zap.String("component", "AuthService"))
 	return &AuthController{
 		service: service,
+		logger:  logger,
 	}
 }
 

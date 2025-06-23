@@ -11,6 +11,7 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	Logger   LoggerConfig   `mapstructure:"logger"`
 }
 
 // ServerConfig 服务器配置
@@ -37,6 +38,12 @@ type JWTConfig struct {
 	ExpirationHours int    `mapstructure:"expire"`
 	Issuer          string `mapstructure:"issuer"`
 	RefreshHours    int    `mapstructure:"refresh_hours"`
+}
+
+// loggerConfig
+type LoggerConfig struct {
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
 }
 
 var (
@@ -82,14 +89,16 @@ func Load() (*Config, error) {
 	v.SetDefault("server.mode", "debug")
 	v.SetDefault("database.max_idle_conns", 10)
 	v.SetDefault("database.max_open_conns", 100)
+
+	// 日志默认值
 	v.SetDefault("logger.level", "info")
 	v.SetDefault("logger.format", "json")
 
 	// JWT 默认值
-    v.SetDefault("jwt.expire", 24)          // 默认 24 小时过期
-    v.SetDefault("jwt.refresh_hours", 168)            // 默认 7 天可刷新
-    v.SetDefault("jwt.issuer", "go-admin-api")        // 默认发行者
-    v.SetDefault("jwt.secret", "default_secret_key_please_change_in_production") // 默认密钥（请在生产环境中更改）
+	v.SetDefault("jwt.expire", 24)                                               // 默认 24 小时过期
+	v.SetDefault("jwt.refresh_hours", 168)                                       // 默认 7 天可刷新
+	v.SetDefault("jwt.issuer", "go-admin-api")                                   // 默认发行者
+	v.SetDefault("jwt.secret", "default_secret_key_please_change_in_production") // 默认密钥（请在生产环境中更改）
 
 	// 读取配置文件
 	if err := v.ReadInConfig(); err != nil {

@@ -8,14 +8,20 @@ import (
 	"github.com/Sesame2/go-admin/internal/models/ent"
 	"github.com/Sesame2/go-admin/internal/models/ent/user"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type UserDAO struct {
-	db interfaces.Database
+	db     interfaces.Database
+	logger *zap.Logger
 }
 
-func NewUserDAO(db interfaces.Database) *UserDAO {
-	return &UserDAO{db: db}
+func NewUserDAO(db interfaces.Database, logger *zap.Logger) *UserDAO {
+	daoLogger := logger.With(zap.String("component", "UserDAO"))
+	return &UserDAO{
+		db:     db,
+		logger: daoLogger,
+	}
 }
 
 func (d *UserDAO) GetByID(ctx context.Context, id uuid.UUID) (*ent.User, error) {
