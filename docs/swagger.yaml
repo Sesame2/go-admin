@@ -113,6 +113,47 @@ paths:
       summary: 用户登录
       tags:
       - 认证
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 刷新JWT令牌以延长会话
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功返回新令牌
+          schema:
+            properties:
+              token:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: 令牌无效或过期
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 刷新令牌
+      tags:
+      - 认证
   /users:
     get:
       consumes:

@@ -156,3 +156,34 @@ func GetRoleFromContext(ctx *gin.Context) (string, error) {
 	}
 	return "", errors.New("角色类型错误")
 }
+
+// ParseTokenWithoutValidation 解析令牌而不验证过期时间
+func ParseTokenWithoutValidation(tokenStr string, secretKey string) (*Claims, error) {
+	// 解析旧令牌而不验证过期时间
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+		// 验证签名算法
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, ErrInvalidToken
+		}
+		return []byte(secretKey), nil
+	}, jwt.WithoutClaimsValidation())
+
+	if err != nil {
+		return nil, ErrParseToken
+	}
+
+	// 验证令牌并提取声明
+	if claims, ok := token.Claims.(*Claims); ok {
+		// 检查其他约束，但不检查过期时间
+		now := time.Now()
+		if claims.Issuer != "go-admin" {
+			return nil, ErrInvalidToken
+		}
+		if claims.NotBefore != nil && now.Before(claims.NotBefore.Time) {
+			return nil, ErrInvalidToken
+		}
+
+		return claims, nil
+	}
+	return nil, ErrInvalidToken
+}

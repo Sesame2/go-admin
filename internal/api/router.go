@@ -55,6 +55,7 @@ func (api *API) SetupRouter(logger *zap.Logger) *gin.Engine {
 		userGroup.PUT("/:id", api.UserController.UpdateUser)
 
 		authGroup.POST("/login", api.AuthController.Login)
+		authGroup.POST("/refresh", api.AuthController.Refresh)
 	}
 	
 	
