@@ -38,6 +38,7 @@ func CallRoot(c *gin.Context) {
 func (api *API) SetupRouter() *gin.Engine {
 	r := gin.Default()
 
+	r.Use(middleware.CORS())
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/", CallRoot)
