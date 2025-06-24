@@ -29,3 +29,4 @@ go.work.sum
 .vscode
 
 *.log
+deployments/env_data/*

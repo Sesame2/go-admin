@@ -30,6 +30,24 @@ services:
     networks:
       - go-admin-network
 
+  kb-minio:
+    image: quay.io/minio/minio:RELEASE.2024-04-06T05-26-02Z
+    container_name: go-admin-minio
+    restart: always
+    ports:
+      - "9000:9000" # MinIO主服务端口映射
+      - "9001:9001" # MinIO控制台端口映射
+    environment:
+      - MINIO_ACCESS_KEY=root
+      - MINIO_SECRET_KEY=123456789
+      - TZ=Asia/Shanghai
+    command: server --console-address ":9001" --address ":9000" /data
+    volumes:
+      - ./env_data/minio/data:/data
+      - ./env_data/minio/config:/root/.minio
+    networks:
+      - go-admin-network
+
 volumes:
   postgres_data:
 

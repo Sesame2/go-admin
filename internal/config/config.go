@@ -12,6 +12,7 @@ type Config struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Logger   LoggerConfig   `mapstructure:"logger"`
+	S3       S3Config       `mapstructure:"s3"`
 }
 
 // ServerConfig 服务器配置
@@ -44,6 +45,13 @@ type JWTConfig struct {
 type LoggerConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
+}
+
+// S3Config
+type S3Config struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
 }
 
 var (
