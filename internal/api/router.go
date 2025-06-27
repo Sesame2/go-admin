@@ -16,16 +16,18 @@ import (
 
 // API服务结构
 type API struct {
-	UserController *controller.UserController
-	AuthController *controller.AuthController
-	Config         *config.Config
+	UserController          *controller.UserController
+	AuthController          *controller.AuthController
+	KnowledgeBaseController *controller.KnowledgeBaseController
+	Config                  *config.Config
 }
 
-func NewAPI(config *config.Config, userController *controller.UserController, authController *controller.AuthController) *API {
+func NewAPI(config *config.Config, userController *controller.UserController, authController *controller.AuthController, kbController *controller.KnowledgeBaseController) *API {
 	return &API{
-		UserController: userController,
-		AuthController: authController,
-		Config:         config,
+		UserController:          userController,
+		AuthController:          authController,
+		KnowledgeBaseController: kbController,
+		Config:                  config,
 	}
 }
 
@@ -47,6 +49,7 @@ func (api *API) SetupRouter(logger *zap.Logger) *gin.Engine {
 	// // 用户相关路由
 	userGroup := r.Group("/api/users")
 	authGroup := r.Group("/api/auth")
+	knowledgebaseGroup := r.Group("/api/knowledge_bases")
 	userGroup.Use(middleware.JWTAuthMiddleware(api.Config.JWT.SecretKey))
 	{
 		userGroup.GET("/", api.UserController.GetAllUser)
@@ -56,8 +59,11 @@ func (api *API) SetupRouter(logger *zap.Logger) *gin.Engine {
 
 		authGroup.POST("/login", api.AuthController.Login)
 		authGroup.POST("/refresh", api.AuthController.Refresh)
+
+		knowledgebaseGroup.POST("/", api.KnowledgeBaseController.CreateKnowledgeBase)
+		knowledgebaseGroup.GET("/", api.KnowledgeBaseController.GetAllKnowledgBase)
+		knowledgebaseGroup.GET("/:id", api.KnowledgeBaseController.GetKnowledgeBaseByID)
 	}
-	
-	
+
 	return r
 }

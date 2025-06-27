@@ -6,5 +6,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// KnowledgeBase is the predicate function for knowledgebase builders.
+type KnowledgeBase func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

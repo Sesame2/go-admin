@@ -9,6 +9,18 @@ import (
 	"github.com/Sesame2/go-admin/internal/models/ent"
 )
 
+// The KnowledgeBaseFunc type is an adapter to allow the use of ordinary
+// function as KnowledgeBase mutator.
+type KnowledgeBaseFunc func(context.Context, *ent.KnowledgeBaseMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f KnowledgeBaseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.KnowledgeBaseMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.KnowledgeBaseMutation", m)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)

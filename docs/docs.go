@@ -142,6 +142,190 @@ const docTemplate = `{
                 }
             }
         },
+        "/knowledge_bases": {
+            "get": {
+                "description": "分页获取知识库列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库模块"
+                ],
+                "summary": "获取所有知识库",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码，默认为1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量，默认为10",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "知识库列表",
+                        "schema": {
+                            "$ref": "#/definitions/dto.KnowledgeBaseListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建一个新的知识库",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库模块"
+                ],
+                "summary": "创建知识库",
+                "parameters": [
+                    {
+                        "description": "知识库创建输入",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateKnowledgeBaseInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功的知识库信息",
+                        "schema": {
+                            "$ref": "#/definitions/ent.KnowledgeBase"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                " details": {
+                                    "type": "string"
+                                },
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "系统内部错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                " detail": {
+                                    "type": "string"
+                                },
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/knowledge_bases/{id}": {
+            "get": {
+                "description": "根据ID获取知识库的详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库模块"
+                ],
+                "summary": "获取知识库详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "知识库ID (UUID格式)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "知识库详情",
+                        "schema": {
+                            "$ref": "#/definitions/ent.KnowledgeBase"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "知识库不存在",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "security": [
@@ -331,6 +515,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CreateKnowledgeBaseInput": {
+            "type": "object",
+            "properties": {
+                "dataset_id": {
+                    "type": "string"
+                },
+                "knowledgebase_name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateUserInput": {
             "type": "object",
             "required": [
@@ -354,6 +549,29 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3
+                }
+            }
+        },
+        "dto.KnowledgeBaseListResult": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.KnowledgeBase"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
@@ -392,6 +610,31 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3
+                }
+            }
+        },
+        "ent.KnowledgeBase": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "dataset_id": {
+                    "description": "关丽娜的数据库ID",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.\n数据库ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "知识库名称",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "更改时间",
+                    "type": "string"
                 }
             }
         },

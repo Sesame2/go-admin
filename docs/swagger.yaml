@@ -1,5 +1,12 @@
 basePath: /api
 definitions:
+  dto.CreateKnowledgeBaseInput:
+    properties:
+      dataset_id:
+        type: string
+      knowledgebase_name:
+        type: string
+    type: object
   dto.CreateUserInput:
     properties:
       email:
@@ -18,6 +25,21 @@ definitions:
     - password
     - role
     - username
+    type: object
+  dto.KnowledgeBaseListResult:
+    properties:
+      current_page:
+        type: integer
+      page_size:
+        type: integer
+      result:
+        items:
+          $ref: '#/definitions/ent.KnowledgeBase'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
     type: object
   dto.LoginInput:
     properties:
@@ -45,6 +67,26 @@ definitions:
       username:
         maxLength: 50
         minLength: 3
+        type: string
+    type: object
+  ent.KnowledgeBase:
+    properties:
+      created_at:
+        description: 创建时间
+        type: string
+      dataset_id:
+        description: 关丽娜的数据库ID
+        type: string
+      id:
+        description: |-
+          ID of the ent.
+          数据库ID
+        type: string
+      name:
+        description: 知识库名称
+        type: string
+      updated_at:
+        description: 更改时间
         type: string
     type: object
   ent.User:
@@ -154,6 +196,125 @@ paths:
       summary: 刷新令牌
       tags:
       - 认证
+  /knowledge_bases:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取知识库列表
+      parameters:
+      - description: 页码，默认为1
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量，默认为10
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 知识库列表
+          schema:
+            $ref: '#/definitions/dto.KnowledgeBaseListResult'
+        "400":
+          description: 参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 获取所有知识库
+      tags:
+      - 知识库模块
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的知识库
+      parameters:
+      - description: 知识库创建输入
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateKnowledgeBaseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功的知识库信息
+          schema:
+            $ref: '#/definitions/ent.KnowledgeBase'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              ' details':
+                type: string
+              error:
+                type: string
+            type: object
+        "500":
+          description: 系统内部错误
+          schema:
+            properties:
+              ' detail':
+                type: string
+              error:
+                type: string
+            type: object
+      summary: 创建知识库
+      tags:
+      - 知识库模块
+  /knowledge_bases/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取知识库的详细信息
+      parameters:
+      - description: 知识库ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 知识库详情
+          schema:
+            $ref: '#/definitions/ent.KnowledgeBase'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: 知识库不存在
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 获取知识库详情
+      tags:
+      - 知识库模块
   /users:
     get:
       consumes:

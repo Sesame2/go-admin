@@ -3,6 +3,9 @@
 package ent
 
 import (
+	"time"
+
+	"github.com/Sesame2/go-admin/internal/models/ent/knowledgebase"
 	"github.com/Sesame2/go-admin/internal/models/ent/schema"
 	"github.com/Sesame2/go-admin/internal/models/ent/user"
 	"github.com/google/uuid"
@@ -12,6 +15,26 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	knowledgebaseFields := schema.KnowledgeBase{}.Fields()
+	_ = knowledgebaseFields
+	// knowledgebaseDescName is the schema descriptor for name field.
+	knowledgebaseDescName := knowledgebaseFields[1].Descriptor()
+	// knowledgebase.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	knowledgebase.NameValidator = knowledgebaseDescName.Validators[0].(func(string) error)
+	// knowledgebaseDescCreatedAt is the schema descriptor for created_at field.
+	knowledgebaseDescCreatedAt := knowledgebaseFields[3].Descriptor()
+	// knowledgebase.DefaultCreatedAt holds the default value on creation for the created_at field.
+	knowledgebase.DefaultCreatedAt = knowledgebaseDescCreatedAt.Default.(func() time.Time)
+	// knowledgebaseDescUpdatedAt is the schema descriptor for updated_at field.
+	knowledgebaseDescUpdatedAt := knowledgebaseFields[4].Descriptor()
+	// knowledgebase.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	knowledgebase.DefaultUpdatedAt = knowledgebaseDescUpdatedAt.Default.(func() time.Time)
+	// knowledgebase.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	knowledgebase.UpdateDefaultUpdatedAt = knowledgebaseDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// knowledgebaseDescID is the schema descriptor for id field.
+	knowledgebaseDescID := knowledgebaseFields[0].Descriptor()
+	// knowledgebase.DefaultID holds the default value on creation for the id field.
+	knowledgebase.DefaultID = knowledgebaseDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescUsername is the schema descriptor for username field.

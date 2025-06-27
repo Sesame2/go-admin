@@ -46,17 +46,20 @@ func New(cfg *config.Config) (*Application, error) {
 
 	// 初始化DAO层
 	userDAO := dao.NewUserDAO(db, log)
+	kbDAO := dao.NewKnowledgeBaseDAO(db, log)
 
 	// 初始化服务层
 	userService := services.NewUserService(userDAO, log)
 	authService := services.NewAuthService(userDAO, cfg, log)
+	kbService := services.NewKnowledgeBaseService(kbDAO, log)
 
 	// 初始化控制器层
 	userController := controller.NewUserController(userService, log)
 	authController := controller.NewAuthController(authService, log)
+	kbController := controller.NewKnowledgeBaseController(kbService, log)
 
 	// 初始化api服务
-	apiService := api.NewAPI(cfg, userController, authController)
+	apiService := api.NewAPI(cfg, userController, authController, kbController)
 
 	// 初始化路由
 	router := apiService.SetupRouter(log)

@@ -8,6 +8,20 @@ import (
 )
 
 var (
+	// KnowledgeBasesColumns holds the columns for the "knowledge_bases" table.
+	KnowledgeBasesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString},
+		{Name: "dataset_id", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// KnowledgeBasesTable holds the schema information for the "knowledge_bases" table.
+	KnowledgeBasesTable = &schema.Table{
+		Name:       "knowledge_bases",
+		Columns:    KnowledgeBasesColumns,
+		PrimaryKey: []*schema.Column{KnowledgeBasesColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -24,6 +38,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		KnowledgeBasesTable,
 		UsersTable,
 	}
 )
