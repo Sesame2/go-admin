@@ -13,6 +13,7 @@ type Config struct {
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Logger   LoggerConfig   `mapstructure:"logger"`
 	S3       S3Config       `mapstructure:"s3"`
+	RabbitMQ RabbitMQConfig `mapstructure:"rabbitmq"`
 }
 
 // ServerConfig 服务器配置
@@ -52,6 +53,18 @@ type S3Config struct {
 	Endpoint  string `mapstructure:"endpoint"`
 	AccessKey string `mapstructure:"access_key"`
 	SecretKey string `mapstructure:"secret_key"`
+}
+
+// RabbitMQConfig
+type RabbitMQConfig struct {
+	Host         string `mapstructure:"host"`
+	Port         int    `mapstructure:"port"`
+	Username     string `mapstructure:"username"`
+	Password     string `mapstructure:"password"`
+	VHost        string `mapstructure:"vhost"`
+	ExchangeName string `mapstructure:"exchange_name"`
+	ExchangeType string `mapstructure:"exchange_type"`
+	Durable      bool   `mapstructure:"durable"`
 }
 
 var (

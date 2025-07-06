@@ -7,6 +7,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/lib/pq v1.10.9
 	github.com/minio/minio-go/v7 v7.0.94
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
 )

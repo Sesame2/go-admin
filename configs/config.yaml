@@ -27,3 +27,10 @@ s3:
   endpoint: http://localhost:9000
   access_key: root
   secret_key: 123456789
+
+rabbitmq:
+  host: localhost
+  port: 5672
+  username: admin
+  password: 123456789
+  vhost: /
