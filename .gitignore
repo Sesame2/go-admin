@@ -30,3 +30,7 @@ go.work.sum
 
 *.log
 deployments/env_data/*
+
+__pycache__/
+*.pyc
+bin/
