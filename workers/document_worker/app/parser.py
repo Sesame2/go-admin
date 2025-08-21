@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import os
 from typing import Any, Dict
 
+from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter
 from langdetect import detect
 from pydantic import BaseModel
@@ -55,7 +56,8 @@ class DocumentParser(ABC):
 class WordParser(DocumentParser):
     def parse(self, file_path: str) -> DocumentParseResult:
         metadata = self.extract_metadata(file_path)
-        converter = DocumentConverter()
+        allowed_formats = [InputFormat.DOCX, InputFormat.MD]
+        converter = DocumentConverter(allowed_formats)
         content = converter.convert(file_path)
         parser_result = content.document.export_to_dict()
         plain_text = ""
@@ -65,3 +67,42 @@ class WordParser(DocumentParser):
         return DocumentParseResult(
             metadata=metadata, parser_result=parser_result, language=language
         )
+
+
+class PDFParser(DocumentParser):
+    def parse(self, file_path: str) -> DocumentParseResult:
+        metadata = self.extract_metadata(file_path)
+        allowed_formats = [InputFormat.PDF]
+        converter = DocumentConverter(allowed_formats)
+        content = converter.convert(file_path)
+        parser_result = content.document.export_to_dict()
+        plain_text = ""
+        for text_node in content.document.texts:
+            plain_text += text_node.text + "\n"
+        language = self.detect_language(plain_text)
+        return DocumentParseResult(
+            metadata=metadata, parser_result=parser_result, language=language
+        )
+
+
+class ParserFactory:
+    """解析器工厂类"""
+
+    @staticmethod
+    def get_parser(file_path: str) -> DocumentParser:
+        """根据文件类型返回相应的解析器"""
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext in [".docx", ".md"]:
+            return WordParser()
+        elif ext in [".pdf"]:
+            return PDFParser()
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
+
+
+if __name__ == "__main__":
+    # 示例用法
+    file_path = "example.docx"
+    parser = ParserFactory().get_parser(file_path=file_path)
+    result = parser.parse(file_path)
+    print(result)
