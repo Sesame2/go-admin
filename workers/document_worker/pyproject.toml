@@ -13,7 +13,10 @@ dependencies = [
     "uvicorn (>=0.35.0,<0.36.0)",
     "aio-pika (>=9.5.5,<10.0.0)",
     "docling (>=2.45.0,<3.0.0)",
-    "langdetect (>=1.0.9,<2.0.0)"
+    "langdetect (>=1.0.9,<2.0.0)",
+    "langchain (>=0.3.27,<0.4.0)",
+    "llama-index-core (>=0.13.2,<0.14.0)",
+    "llama-index-embeddings-dashscope (>=0.4.0,<0.5.0)"
 ]
 
 

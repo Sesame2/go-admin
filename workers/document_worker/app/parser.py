@@ -11,6 +11,7 @@ from pydantic import BaseModel
 class DocumentParseResult(BaseModel):
     metadata: Dict[str, Any]
     parser_result: Dict[str, Any]
+    text: str
     language: str
 
 
@@ -65,7 +66,7 @@ class WordParser(DocumentParser):
             plain_text += text_node.text + "\n"
         language = self.detect_language(plain_text)
         return DocumentParseResult(
-            metadata=metadata, parser_result=parser_result, language=language
+            metadata=metadata, parser_result=parser_result, language=language, text=plain_text
         )
 
 
@@ -81,7 +82,7 @@ class PDFParser(DocumentParser):
             plain_text += text_node.text + "\n"
         language = self.detect_language(plain_text)
         return DocumentParseResult(
-            metadata=metadata, parser_result=parser_result, language=language
+            metadata=metadata, parser_result=parser_result, language=language, text=plain_text
         )
 
 

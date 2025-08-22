@@ -45,6 +45,9 @@ class Settings:
     postgres_host = loader.get("database", "host")
     postgres_username = loader.get("database", "username")
     postgres_password = loader.get("database", "password")
+    
+    qwen_base_url = os.environ.get("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    qwen_api_key = os.environ.get("QWEN_API_KEY", None)
 
     @classmethod
     def ensure_temp_dir(cls):

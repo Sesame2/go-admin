@@ -1,9 +1,14 @@
 from contextlib import asynccontextmanager
-import logging
+from dotenv import load_dotenv
+import os
 
 import aio_pika
 from fastapi import FastAPI
 import uvicorn
+
+
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=env_path, override=True)
 
 
 async def start_mq():
