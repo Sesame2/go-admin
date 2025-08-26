@@ -43,8 +43,10 @@ class ConfigLoader:
 class Settings:
     loader = ConfigLoader()
     postgres_host = loader.get("database", "host")
+    postgres_port = loader.get("database", "port")
     postgres_username = loader.get("database", "username")
     postgres_password = loader.get("database", "password")
+    postgres_db = loader.get("database", "db_name")
     
     qwen_base_url = os.environ.get("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
     qwen_api_key = os.environ.get("QWEN_API_KEY", None)
