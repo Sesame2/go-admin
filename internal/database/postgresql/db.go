@@ -3,58 +3,75 @@ package postgresql
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Sesame2/go-admin/internal/config"
 	"github.com/Sesame2/go-admin/internal/database/interfaces"
-	"github.com/Sesame2/go-admin/internal/models/ent"
-	_ "github.com/lib/pq"
+	"github.com/Sesame2/go-admin/internal/models"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 type PostgreSQL struct {
-	client *ent.Client
+	db *gorm.DB
 }
 
 func NewDatabase(cfg config.DatabaseConfig) (interfaces.Database, error) {
-
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBName, cfg.SSLMode,
 	)
-	client, err := ent.Open("postgres", dsn)
-	if err != nil {
-		log.Fatalf("连接数据库失败：%v", err)
-		return nil, fmt.Errorf("连接数据失败：%w", err)
+
+	// 配置 GORM
+	gormConfig := &gorm.Config{
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
 	}
 
-	// FIXME 不知道为什么无法设置连接池 因为无法获取 client.DB()方法
+	db, err := gorm.Open(postgres.Open(dsn), gormConfig)
+	if err != nil {
+		return nil, fmt.Errorf("连接数据库失败：%w", err)
+	}
 
-	log.Println("成功连接到PostgreSQL数据库")
-	return &PostgreSQL{client: client}, nil
+	// 配置连接池
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("获取数据库实例失败：%w", err)
+	}
+
+	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
+
+	return &PostgreSQL{db: db}, nil
 }
 
-// 实现Client方法，返回ent客户端
-func (p *PostgreSQL) Client() *ent.Client {
-	return p.client
+// DB 返回 GORM 数据库实例
+func (p *PostgreSQL) DB() *gorm.DB {
+	return p.db
 }
 
-// 实现Close方法，关闭客户端
+// Close 关闭数据库连接
 func (p *PostgreSQL) Close() error {
-	if p.client == nil {
+	if p.db == nil {
 		return nil
 	}
-	err := p.client.Close()
-	if err == nil {
-		log.Println("数据库已关闭")
+	sqlDB, err := p.db.DB()
+	if err != nil {
+		return err
 	}
-	return err
+	return sqlDB.Close()
 }
 
-// 实现Migrate方法，执行数据库迁移
+// Migrate 执行数据库迁移
 func (p *PostgreSQL) Migrate(ctx context.Context) error {
-	if err := p.client.Schema.Create(ctx); err != nil {
-		return fmt.Errorf("创建数据库Schema失败： %w", err)
+	// 自动迁移所有模型
+	err := p.db.WithContext(ctx).AutoMigrate(
+		&models.User{},
+		&models.Document{},
+		&models.KnowledgeBase{},
+		&models.KnowledgeChunk{},
+	)
+	if err != nil {
+		return fmt.Errorf("数据库迁移失败：%w", err)
 	}
-	log.Println("数据库迁移完成")
 	return nil
 }

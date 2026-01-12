@@ -3,11 +3,12 @@ package interfaces
 import (
 	"context"
 
-	"github.com/Sesame2/go-admin/internal/models/ent"
+	"gorm.io/gorm"
 )
 
+// Database 数据库接口
 type Database interface {
-	Client() *ent.Client
+	DB() *gorm.DB
 	Close() error
 	Migrate(ctx context.Context) error
 }

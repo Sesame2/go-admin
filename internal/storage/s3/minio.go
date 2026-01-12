@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/Sesame2/go-admin/internal/config"
@@ -33,10 +34,15 @@ func NewMinioClient(config *config.Config) (*MinioClient, error) {
 	}, nil
 }
 
-func (c *MinioClient) SignURL(ctx context.Context, buket, object string, expire time.Duration) (string, error) {
-	url, err := c.Client.PresignedGetObject(ctx, buket, object, expire, nil)
+func (c *MinioClient) SignURL(ctx context.Context, bucket, objectName string, expire time.Duration) (string, error) {
+	url, err := c.Client.PresignedGetObject(ctx, bucket, objectName, expire, nil)
 	if err != nil {
 		return "", err
 	}
 	return url.String(), nil
+}
+
+func (c *MinioClient) Upload(ctx context.Context, bucket, objectName string, reader io.Reader, size int64) error {
+	_, err := c.Client.PutObject(ctx, bucket, objectName, reader, size, minio.PutObjectOptions{})
+	return err
 }

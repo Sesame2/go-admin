@@ -7,7 +7,6 @@ import (
 	"github.com/Sesame2/go-admin/internal/api/controller"
 	"github.com/Sesame2/go-admin/internal/config"
 	"github.com/Sesame2/go-admin/internal/middleware"
-	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -38,11 +37,11 @@ func CallRoot(c *gin.Context) {
 	})
 }
 
-func (api *API) SetupRouter(logger *zap.Logger) *gin.Engine {
+func (api *API) SetupRouter() *gin.Engine {
 	r := gin.Default()
 
 	r.Use(middleware.CORS())
-	r.Use(middleware.LoggerMiddleware(logger))
+	r.Use(middleware.LoggerMiddleware())
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/", CallRoot)
@@ -56,13 +55,16 @@ func (api *API) SetupRouter(logger *zap.Logger) *gin.Engine {
 		userGroup.GET("/:id", api.UserController.GetUser)
 		userGroup.POST("/", api.UserController.CreateUser)
 		userGroup.PUT("/:id", api.UserController.UpdateUser)
+		userGroup.DELETE("/:id", api.UserController.DeleteUser)
 
 		authGroup.POST("/login", api.AuthController.Login)
 		authGroup.POST("/refresh", api.AuthController.Refresh)
 
 		knowledgebaseGroup.POST("/", api.KnowledgeBaseController.CreateKnowledgeBase)
-		knowledgebaseGroup.GET("/", api.KnowledgeBaseController.GetAllKnowledgBase)
+		knowledgebaseGroup.GET("/", api.KnowledgeBaseController.GetAllKnowledgeBase)
 		knowledgebaseGroup.GET("/:id", api.KnowledgeBaseController.GetKnowledgeBaseByID)
+		knowledgebaseGroup.PUT("/:id", api.KnowledgeBaseController.UpdateKnowledgeBase)
+		knowledgebaseGroup.DELETE("/:id", api.KnowledgeBaseController.DeleteKnowledgeBase)
 	}
 
 	return r

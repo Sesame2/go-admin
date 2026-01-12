@@ -122,3 +122,33 @@ func (c *RabbitMQClient) Send(ctx context.Context, exchange, routingKey string, 
 		},
 	)
 }
+
+func (c *RabbitMQClient) HealthCheck() error {
+	if !c.isConnected {
+		return fmt.Errorf("未连接到 RabbitMQ")
+	}
+	if c.conn.IsClosed() {
+		c.isConnected = false
+		return fmt.Errorf("RabbitMQ 连接已关闭")
+	}
+	return nil
+}
+
+func (c *RabbitMQClient) Close() error {
+	c.logger.Info("关闭 RabbitMQ 连接")
+
+	if c.channel != nil {
+		if err := c.channel.Close(); err != nil {
+			c.logger.Warn("关闭通道失败", zap.Error(err))
+		}
+	}
+	if c.conn != nil {
+		if err := c.conn.Close(); err != nil {
+			c.logger.Error("关闭连接失败", zap.Error(err))
+			return err
+		}
+	}
+	c.isConnected = false
+	c.logger.Info("RabbitMQ 连接已关闭")
+	return nil
+}

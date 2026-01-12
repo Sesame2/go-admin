@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -63,7 +64,7 @@ func CORSWithConfig(config CORSConfig) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Methods", allowMethods)
 			c.Header("Access-Control-Allow-Headers", allowHeaders)
 			c.Header("Access-Control-Expose-Headers", exposeHeaders)
-			c.Header("Access-Control-Max-Age", string(maxAge))
+			c.Header("Access-Control-Max-Age", fmt.Sprintf("%d", maxAge))
 
 			if config.AllowCredentials {
 				c.Header("Access-Control-Allow-Credentials", "true")

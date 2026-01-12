@@ -3,11 +3,13 @@ package middleware
 import (
 	"time"
 
+	"github.com/Sesame2/go-admin/internal/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func LoggerMiddleware() gin.HandlerFunc {
+	log := logger.NewModuleLogger("HTTP")
 	return func(ctx *gin.Context) {
 		start := time.Now()
 		path := ctx.Request.URL.Path
@@ -19,7 +21,7 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 		cost := time.Since(start)
 
 		// 记录请求日志
-		logger.Debug(
+		log.Debug(
 			"HTTP请求",
 			zap.String("method", ctx.Request.Method),
 			zap.String("path", path),

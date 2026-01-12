@@ -4,7 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	customerrors "github.com/Sesame2/go-admin/internal/errors" // 自定义错误包使用别名
+	customerrors "github.com/Sesame2/go-admin/internal/errors"
+	"github.com/Sesame2/go-admin/internal/logger"
 	"github.com/Sesame2/go-admin/internal/models/dto"
 	"github.com/Sesame2/go-admin/internal/services"
 	"github.com/gin-gonic/gin"
@@ -14,14 +15,13 @@ import (
 
 type UserController struct {
 	service *services.UserService
-	logger  *zap.Logger
+	log     *zap.Logger
 }
 
-func NewUserController(service *services.UserService, logger *zap.Logger) *UserController {
-	logger = logger.With(zap.String("component", "UserController"))
+func NewUserController(service *services.UserService) *UserController {
 	return &UserController{
 		service: service,
-		logger:  logger,
+		log:     logger.NewModuleLogger("UserController"),
 	}
 }
 
@@ -33,7 +33,7 @@ func NewUserController(service *services.UserService, logger *zap.Logger) *UserC
 // @Produce      json
 // @Security     Bearer
 // @Param        id   path      string  true  "用户ID (UUID格式)"
-// @Success      200  {object}  ent.User       "用户详细信息"
+// @Success      200  {object}  models.User       "用户详细信息"
 // @Failure      400  {object}  object{error=string}  "请求参数错误"
 // @Failure      404  {object}  object{error=string}  "用户不存在"
 // @Failure      500  {object}  object{error=string}  "服务器内部错误"
@@ -44,7 +44,6 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "用户ID不能为空"})
 		return
 	}
-	// 将字符串ID转换为uuid.UUID类型
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "无效的用户ID格式"})
@@ -52,7 +51,6 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	}
 	user, err := c.service.GetUser(ctx, id)
 	if err != nil {
-		// 处理用户不存在的情况
 		if errors.Is(err, customerrors.ErrUserNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
 			return
@@ -71,13 +69,11 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Produce json
 // @Security     Bearer
 // @Param data body dto.CreateUserInput true "用户信息"
-// @Success 200 {object} ent.User "创建成功，返回用户信息"
+// @Success 200 {object} models.User "创建成功，返回用户信息"
 // @Router /users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
-	// 创建输入结构体
 	var input dto.CreateUserInput
 
-	// 从请求体中解析 JSON 到输入结构体
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "无效的输入数据", "details": err.Error()})
 		return
@@ -97,7 +93,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
-// @Success      200  {object}  object{data=[]ent.User}  "返回用户列表"
+// @Success      200  {object}  object{data=[]models.User}  "返回用户列表"
 // @Router       /users [get]
 func (c *UserController) GetAllUser(ctx *gin.Context) {
 	users, err := c.service.ListUsers(ctx)
@@ -120,7 +116,7 @@ func (c *UserController) GetAllUser(ctx *gin.Context) {
 // @Security     Bearer
 // @Param        id   path      string  true  "用户ID"
 // @Param        user body      dto.UpdateUserInput  true  "用户更新信息"
-// @Success      200  {object}  ent.User
+// @Success      200  {object}  models.User
 // @Router       /users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	userID := ctx.Param("id")
@@ -146,4 +142,35 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, user)
+}
+
+// DeleteUser godoc
+// @Summary      删除用户
+// @Description  删除指定ID的用户
+// @Tags         用户模块
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id   path      string  true  "用户ID"
+// @Success      200  {object}  object{message=string}
+// @Router       /users/{id} [delete]
+func (c *UserController) DeleteUser(ctx *gin.Context) {
+	userID := ctx.Param("id")
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "无效的用户格式"})
+		return
+	}
+
+	err = c.service.DeleteUser(ctx, id)
+	if err != nil {
+		if errors.Is(err, customerrors.ErrUserNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "用户删除成功"})
 }

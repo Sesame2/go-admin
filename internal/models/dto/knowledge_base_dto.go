@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/Sesame2/go-admin/internal/models/ent"
+import "github.com/Sesame2/go-admin/internal/models"
 
 type CreateKnowledgeBaseInput struct {
 	KBName    string  `json:"knowledgebase_name"`
@@ -13,9 +13,9 @@ type UpdateKnowledgeBaseInput struct {
 }
 
 type KnowledgeBaseListResult struct {
-	TotalCount  int                  `json:"total_count"`
-	TotalPages  int                  `json:"total_pages"`
-	CurrentPage int                  `json:"current_page"`
-	PageSize    int                  `json:"page_size"`
-	Result      []*ent.KnowledgeBase `json:"result"`
+	TotalCount  int                     `json:"total_count"`
+	TotalPages  int                     `json:"total_pages"`
+	CurrentPage int                     `json:"current_page"`
+	PageSize    int                     `json:"page_size"`
+	Result      []*models.KnowledgeBase `json:"result"`
 }

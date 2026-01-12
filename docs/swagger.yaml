@@ -26,6 +26,19 @@ definitions:
     - role
     - username
     type: object
+  dto.DocumentListResult:
+    properties:
+      documents:
+        items:
+          $ref: '#/definitions/models.Document'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+    type: object
   dto.KnowledgeBaseListResult:
     properties:
       current_page:
@@ -34,7 +47,7 @@ definitions:
         type: integer
       result:
         items:
-          $ref: '#/definitions/ent.KnowledgeBase'
+          $ref: '#/definitions/models.KnowledgeBase'
         type: array
       total_count:
         type: integer
@@ -56,6 +69,24 @@ definitions:
     - password
     - username
     type: object
+  dto.UpdateDocumentInput:
+    properties:
+      description:
+        type: string
+      file_name:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.UpdateKnowledgeBaseInput:
+    properties:
+      dataset_id:
+        type: string
+      knowledgebase_name:
+        type: string
+    type: object
   dto.UpdateUserInput:
     properties:
       email:
@@ -69,44 +100,85 @@ definitions:
         minLength: 3
         type: string
     type: object
-  ent.KnowledgeBase:
+  models.Document:
     properties:
       created_at:
-        description: 创建时间
         type: string
-      dataset_id:
-        description: 关丽娜的数据库ID
+      description:
+        type: string
+      doc_num:
+        type: integer
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      file_type:
         type: string
       id:
-        description: |-
-          ID of the ent.
-          数据库ID
+        type: string
+      knowledge_base:
+        $ref: '#/definitions/models.KnowledgeBase'
+      knowledge_base_id:
         type: string
       name:
-        description: 知识库名称
+        type: string
+      owner:
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: 关联
+      status:
         type: string
       updated_at:
-        description: 更改时间
+        type: string
+      user_id:
         type: string
     type: object
-  ent.User:
+  models.JSONMap:
+    additionalProperties: true
+    type: object
+  models.KnowledgeBase:
     properties:
+      created_at:
+        type: string
+      dataset_id:
+        type: string
+      description:
+        type: string
+      doc_num:
+        type: integer
+      document_count:
+        type: integer
+      id:
+        type: string
+      model:
+        type: string
+      name:
+        type: string
+      tags:
+        $ref: '#/definitions/models.JSONMap'
+      updated_at:
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      documents:
+        description: 关联
+        items:
+          $ref: '#/definitions/models.Document'
+        type: array
       email:
-        description: Email holds the value of the "email" field.
         type: string
       id:
-        description: |-
-          ID of the ent.
-          用户 UUID
         type: string
-      password:
-        description: Password holds the value of the "password" field.
+      nickname:
         type: string
       role:
-        description: 用户角色
+        type: string
+      updated_at:
         type: string
       username:
-        description: Username holds the value of the "username" field.
         type: string
     type: object
 host: localhost:8080
@@ -196,6 +268,232 @@ paths:
       summary: 刷新令牌
       tags:
       - 认证
+  /documents:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取指定知识库下的所有文档
+      parameters:
+      - description: 知识库ID
+        in: query
+        name: knowledge_base_id
+        required: true
+        type: string
+      - description: 页码，默认为1
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量，默认为10
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 文档列表
+          schema:
+            $ref: '#/definitions/dto.DocumentListResult'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取知识库下所有文档
+      tags:
+      - 文档模块
+  /documents/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的文档
+      parameters:
+      - description: 文档ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: 文档不存在
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 删除文档
+      tags:
+      - 文档模块
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取文档的详细信息
+      parameters:
+      - description: 文档ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 文档详情
+          schema:
+            $ref: '#/definitions/models.Document'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: 文档不存在
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取文档详情
+      tags:
+      - 文档模块
+    put:
+      consumes:
+      - application/json
+      description: 更新文档信息
+      parameters:
+      - description: 文档ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新输入
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateDocumentInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新后的文档
+          schema:
+            $ref: '#/definitions/models.Document'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: 文档不存在
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 更新文档
+      tags:
+      - 文档模块
+  /documents/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传文档到指定知识库
+      parameters:
+      - description: 知识库ID
+        in: formData
+        name: knowledge_base_id
+        required: true
+        type: string
+      - description: 要上传的文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传成功的文档信息
+          schema:
+            $ref: '#/definitions/models.Document'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 上传文档
+      tags:
+      - 文档模块
   /knowledge_bases:
     get:
       consumes:
@@ -251,7 +549,7 @@ paths:
         "200":
           description: 创建成功的知识库信息
           schema:
-            $ref: '#/definitions/ent.KnowledgeBase'
+            $ref: '#/definitions/models.KnowledgeBase'
         "400":
           description: 请求参数错误
           schema:
@@ -274,6 +572,50 @@ paths:
       tags:
       - 知识库模块
   /knowledge_bases/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的知识库
+      parameters:
+      - description: 知识库ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: 知识库不存在
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 删除知识库
+      tags:
+      - 知识库模块
     get:
       consumes:
       - application/json
@@ -290,7 +632,7 @@ paths:
         "200":
           description: 知识库详情
           schema:
-            $ref: '#/definitions/ent.KnowledgeBase'
+            $ref: '#/definitions/models.KnowledgeBase'
         "400":
           description: 请求参数错误
           schema:
@@ -315,6 +657,53 @@ paths:
       summary: 获取知识库详情
       tags:
       - 知识库模块
+    put:
+      consumes:
+      - application/json
+      description: 更新知识库信息
+      parameters:
+      - description: 知识库ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新输入
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateKnowledgeBaseInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新后的知识库
+          schema:
+            $ref: '#/definitions/models.KnowledgeBase'
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: 知识库不存在
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: 更新知识库
+      tags:
+      - 知识库模块
   /users:
     get:
       consumes:
@@ -329,7 +718,7 @@ paths:
             properties:
               data:
                 items:
-                  $ref: '#/definitions/ent.User'
+                  $ref: '#/definitions/models.User'
                 type: array
             type: object
       security:
@@ -354,13 +743,38 @@ paths:
         "200":
           description: 创建成功，返回用户信息
           schema:
-            $ref: '#/definitions/ent.User'
+            $ref: '#/definitions/models.User'
       security:
       - Bearer: []
       summary: 创建新用户
       tags:
       - 用户模块
   /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的用户
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 删除用户
+      tags:
+      - 用户模块
     get:
       consumes:
       - application/json
@@ -377,7 +791,7 @@ paths:
         "200":
           description: 用户详细信息
           schema:
-            $ref: '#/definitions/ent.User'
+            $ref: '#/definitions/models.User'
         "400":
           description: 请求参数错误
           schema:
@@ -426,7 +840,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ent.User'
+            $ref: '#/definitions/models.User'
       security:
       - Bearer: []
       summary: 更新用户信息

@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   postgres:
-    image: postgres:14-alpine
+    image: pgvector/pgvector:pg14
     container_name: go-admin-postgres
     restart: always
     environment:
