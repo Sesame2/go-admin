@@ -23,8 +23,8 @@ type CORSConfig struct {
 func DefaultCORSConfig() CORSConfig {
 	return CORSConfig{
 		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "Accept", "Cache-Control", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
@@ -106,6 +106,10 @@ func normalizeOrigins(origins []string) []string {
 func getAllowOrigin(origin string, allowedOrigins []string) string {
 	// 所有Origin都允许
 	if contains(allowedOrigins, "*") {
+		// 如果允许所有Origin且请求带有Origin头，则回显Origin以支持AllowCredentials
+		if origin != "" {
+			return origin
+		}
 		return "*"
 	}
 

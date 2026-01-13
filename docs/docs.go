@@ -179,6 +179,12 @@ const docTemplate = `{
                         "description": "每页数量，默认为10",
                         "name": "page_size",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "文档状态筛选",
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -186,6 +192,72 @@ const docTemplate = `{
                         "description": "文档列表",
                         "schema": {
                             "$ref": "#/definitions/dto.DocumentListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/parse": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "触发文档解析任务（异步处理）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文档模块"
+                ],
+                "summary": "解析文档",
+                "parameters": [
+                    {
+                        "description": "解析请求",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ParseDocumentInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "解析任务已提交",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
                         }
                     },
                     "400": {
@@ -476,6 +548,70 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "文档不存在",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/{id}/download": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取文档的预签名下载URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文档模块"
+                ],
+                "summary": "获取文档下载URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "文档ID (UUID格式)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "下载URL",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -823,6 +959,84 @@ const docTemplate = `{
                 }
             }
         },
+        "/retrieval/stream": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "通过SSE流式返回检索和问答结果",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "检索模块"
+                ],
+                "summary": "流式检索问答",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户问题",
+                        "name": "question",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "知识库ID",
+                        "name": "knowledge_base_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "最大迭代次数，默认5",
+                        "name": "max_iterations",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否流式输出答案，默认true",
+                        "name": "stream_answer",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SSE事件流",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "security": [
@@ -1054,12 +1268,17 @@ const docTemplate = `{
     "definitions": {
         "dto.CreateKnowledgeBaseInput": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
-                "dataset_id": {
+                "description": {
                     "type": "string"
                 },
-                "knowledgebase_name": {
-                    "type": "string"
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
                 }
             }
         },
@@ -1080,7 +1299,12 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "role": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "user",
+                        "guest"
+                    ]
                 },
                 "username": {
                     "type": "string",
@@ -1152,16 +1376,27 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ParseDocumentInput": {
+            "type": "object",
+            "required": [
+                "document_id"
+            ],
+            "properties": {
+                "document_id": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.UpdateDocumentInput": {
             "type": "object",
             "properties": {
-                "description": {
-                    "type": "string"
+                "atom_question_count": {
+                    "type": "integer"
                 },
-                "file_name": {
-                    "type": "string"
+                "chunk_count": {
+                    "type": "integer"
                 },
-                "name": {
+                "error_message": {
                     "type": "string"
                 },
                 "status": {
@@ -1172,11 +1407,13 @@ const docTemplate = `{
         "dto.UpdateKnowledgeBaseInput": {
             "type": "object",
             "properties": {
-                "dataset_id": {
+                "description": {
                     "type": "string"
                 },
-                "knowledgebase_name": {
-                    "type": "string"
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
                 }
             }
         },
@@ -1201,22 +1438,32 @@ const docTemplate = `{
         "models.Document": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "doc_num": {
+                "atom_question_count": {
+                    "description": "原子问题数量",
                     "type": "integer"
                 },
-                "file_name": {
+                "chunk_count": {
+                    "description": "处理结果统计",
+                    "type": "integer"
+                },
+                "created_at": {
+                    "description": "时间戳",
+                    "type": "string"
+                },
+                "error_message": {
+                    "description": "错误信息",
                     "type": "string"
                 },
                 "file_size": {
+                    "description": "文件大小（字节）",
                     "type": "integer"
                 },
                 "file_type": {
+                    "description": "pdf, docx, pptx, markdown",
+                    "type": "string"
+                },
+                "filename": {
+                    "description": "文档基本信息",
                     "type": "string"
                 },
                 "id": {
@@ -1228,7 +1475,16 @@ const docTemplate = `{
                 "knowledge_base_id": {
                     "type": "string"
                 },
-                "name": {
+                "meta_data": {
+                    "description": "元数据（自定义扩展字段）",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.JSONMap"
+                        }
+                    ]
+                },
+                "minio_path": {
+                    "description": "MinIO 存储路径",
                     "type": "string"
                 },
                 "owner": {
@@ -1239,8 +1495,17 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "status": {
+                "processed_at": {
+                    "description": "处理完成时间",
                     "type": "string"
+                },
+                "status": {
+                    "description": "处理状态 - 使用 PostgreSQL ENUM 类型（与 Python 模型保持一致）",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.DocumentStatus"
+                        }
+                    ]
                 },
                 "updated_at": {
                     "type": "string"
@@ -1250,6 +1515,39 @@ const docTemplate = `{
                 }
             }
         },
+        "models.DocumentStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "downloading",
+                "parsing",
+                "chunking",
+                "tagging",
+                "embedding",
+                "completed",
+                "failed"
+            ],
+            "x-enum-comments": {
+                "DocumentStatusChunking": "分片中",
+                "DocumentStatusCompleted": "处理完成",
+                "DocumentStatusDownloading": "下载中",
+                "DocumentStatusEmbedding": "向量化中",
+                "DocumentStatusFailed": "处理失败",
+                "DocumentStatusParsing": "解析中",
+                "DocumentStatusPending": "待处理",
+                "DocumentStatusTagging": "原子问题生成中"
+            },
+            "x-enum-varnames": [
+                "DocumentStatusPending",
+                "DocumentStatusDownloading",
+                "DocumentStatusParsing",
+                "DocumentStatusChunking",
+                "DocumentStatusTagging",
+                "DocumentStatusEmbedding",
+                "DocumentStatusCompleted",
+                "DocumentStatusFailed"
+            ]
+        },
         "models.JSONMap": {
             "type": "object",
             "additionalProperties": true
@@ -1258,9 +1556,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
-                },
-                "dataset_id": {
                     "type": "string"
                 },
                 "description": {
@@ -1275,9 +1570,6 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "model": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -1285,6 +1577,17 @@ const docTemplate = `{
                     "$ref": "#/definitions/models.JSONMap"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "description": "关联",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    ]
+                },
+                "user_id": {
                     "type": "string"
                 }
             }

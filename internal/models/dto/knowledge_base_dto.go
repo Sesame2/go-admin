@@ -3,13 +3,13 @@ package dto
 import "github.com/Sesame2/go-admin/internal/models"
 
 type CreateKnowledgeBaseInput struct {
-	KBName    string  `json:"knowledgebase_name"`
-	DatasetID *string `json:"dataset_id,omitempty"`
+	Name        string `json:"name" binding:"required,min=1,max=255"`
+	Description string `json:"description,omitempty"`
 }
 
 type UpdateKnowledgeBaseInput struct {
-	KBName    *string `json:"knowledgebase_name"`
-	DatasetID *string `json:"dataset_id,omitempty"`
+	Name        *string `json:"name,omitempty" binding:"omitempty,min=1,max=255"`
+	Description *string `json:"description,omitempty"`
 }
 
 type KnowledgeBaseListResult struct {

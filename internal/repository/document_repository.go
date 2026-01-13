@@ -30,11 +30,11 @@ func NewDocumentRepository(db interfaces.Database) *DocumentRepository {
 func (r *DocumentRepository) Create(ctx context.Context, doc *models.Document) error {
 	err := r.db.DB().WithContext(ctx).Create(doc).Error
 	if err != nil {
-		r.log.Error("创建文档失败", zap.String("name", doc.Name), zap.Error(err))
+		r.log.Error("创建文档失败", zap.String("filename", doc.Filename), zap.Error(err))
 		return err
 	}
 
-	r.log.Info("创建文档成功", zap.String("id", doc.ID.String()), zap.String("name", doc.Name))
+	r.log.Info("创建文档成功", zap.String("id", doc.ID.String()), zap.String("filename", doc.Filename))
 	return nil
 }
 
@@ -78,10 +78,15 @@ func (r *DocumentRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 }
 
 // ListByKnowledgeBase 根据知识库ID分页获取文档
-func (r *DocumentRepository) ListByKnowledgeBase(ctx context.Context, kbID uuid.UUID, limit, offset int) ([]*models.Document, error) {
+func (r *DocumentRepository) ListByKnowledgeBase(ctx context.Context, kbID uuid.UUID, limit, offset int, status *string) ([]*models.Document, error) {
 	var docs []*models.Document
-	err := r.db.DB().WithContext(ctx).
-		Where("knowledge_base_id = ?", kbID).
+	query := r.db.DB().WithContext(ctx).Where("knowledge_base_id = ?", kbID)
+
+	if status != nil && *status != "" {
+		query = query.Where("status = ?", *status)
+	}
+
+	err := query.
 		Limit(limit).
 		Offset(offset).
 		Order("created_at DESC").
@@ -94,12 +99,15 @@ func (r *DocumentRepository) ListByKnowledgeBase(ctx context.Context, kbID uuid.
 }
 
 // CountByKnowledgeBase 根据知识库ID统计文档数量
-func (r *DocumentRepository) CountByKnowledgeBase(ctx context.Context, kbID uuid.UUID) (int64, error) {
+func (r *DocumentRepository) CountByKnowledgeBase(ctx context.Context, kbID uuid.UUID, status *string) (int64, error) {
 	var count int64
-	err := r.db.DB().WithContext(ctx).
-		Model(&models.Document{}).
-		Where("knowledge_base_id = ?", kbID).
-		Count(&count).Error
+	query := r.db.DB().WithContext(ctx).Model(&models.Document{}).Where("knowledge_base_id = ?", kbID)
+
+	if status != nil && *status != "" {
+		query = query.Where("status = ?", *status)
+	}
+
+	err := query.Count(&count).Error
 	if err != nil {
 		r.log.Error("统计知识库文档数量失败", zap.String("kb_id", kbID.String()), zap.Error(err))
 		return 0, err
@@ -119,6 +127,51 @@ func (r *DocumentRepository) Update(ctx context.Context, doc *models.Document) e
 	return nil
 }
 
+// UpdateStatus 更新文档状态
+func (r *DocumentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status models.DocumentStatus, errorMsg *string) error {
+	updates := map[string]interface{}{
+		"status": status,
+	}
+	if errorMsg != nil {
+		updates["error_message"] = *errorMsg
+	}
+
+	err := r.db.DB().WithContext(ctx).
+		Model(&models.Document{}).
+		Where("id = ?", id).
+		Updates(updates).Error
+	if err != nil {
+		r.log.Error("更新文档状态失败", zap.String("id", id.String()), zap.Error(err))
+		return err
+	}
+
+	r.log.Info("更新文档状态成功", zap.String("id", id.String()), zap.String("status", string(status)))
+	return nil
+}
+
+// UpdateProcessingResult 更新文档处理结果
+func (r *DocumentRepository) UpdateProcessingResult(ctx context.Context, id uuid.UUID, chunkCount, atomCount int) error {
+	err := r.db.DB().WithContext(ctx).
+		Model(&models.Document{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"chunk_count":         chunkCount,
+			"atom_question_count": atomCount,
+			"status":              models.DocumentStatusCompleted,
+			"processed_at":        gorm.Expr("NOW()"),
+		}).Error
+	if err != nil {
+		r.log.Error("更新文档处理结果失败", zap.String("id", id.String()), zap.Error(err))
+		return err
+	}
+
+	r.log.Info("更新文档处理结果成功",
+		zap.String("id", id.String()),
+		zap.Int("chunk_count", chunkCount),
+		zap.Int("atom_count", atomCount))
+	return nil
+}
+
 // Delete 删除文档
 func (r *DocumentRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	err := r.db.DB().WithContext(ctx).Delete(&models.Document{}, "id = ?", id).Error
@@ -127,6 +180,19 @@ func (r *DocumentRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	r.log.Info("删除文档成功", zap.String("id", id.String()))
+	return nil
+}
+
+// DeleteByKnowledgeBase 删除知识库下的所有文档
+func (r *DocumentRepository) DeleteByKnowledgeBase(ctx context.Context, kbID uuid.UUID) error {
+	err := r.db.DB().WithContext(ctx).
+		Where("knowledge_base_id = ?", kbID).
+		Delete(&models.Document{}).Error
+	if err != nil {
+		r.log.Error("删除知识库文档失败", zap.String("kb_id", kbID.String()), zap.Error(err))
+		return err
+	}
+	r.log.Info("删除知识库文档成功", zap.String("kb_id", kbID.String()))
 	return nil
 }
 

@@ -25,10 +25,11 @@ func NewKnowledgeBaseService(repo *repository.KnowledgeBaseRepository) *Knowledg
 	}
 }
 
-func (s *KnowledgeBaseService) CreateKnowledgeBase(ctx context.Context, input *dto.CreateKnowledgeBaseInput) (*models.KnowledgeBase, error) {
+func (s *KnowledgeBaseService) CreateKnowledgeBase(ctx context.Context, userID uuid.UUID, input *dto.CreateKnowledgeBaseInput) (*models.KnowledgeBase, error) {
 	kb := &models.KnowledgeBase{
-		Name:      input.KBName,
-		DatasetID: input.DatasetID,
+		Name:        input.Name,
+		Description: input.Description,
+		UserID:      userID,
 	}
 
 	err := s.repo.Create(ctx, kb)
@@ -36,25 +37,25 @@ func (s *KnowledgeBaseService) CreateKnowledgeBase(ctx context.Context, input *d
 		s.log.Error("创建知识库失败", zap.Error(err))
 		return nil, err
 	}
-	s.log.Info("创建知识库成功", zap.String("kb_name", input.KBName))
+	s.log.Info("创建知识库成功", zap.String("kb_name", input.Name), zap.String("user_id", userID.String()))
 	return kb, nil
 }
 
-func (s *KnowledgeBaseService) GetAllKnowledgeBase(ctx context.Context, page, pageSize int) (dto.KnowledgeBaseListResult, error) {
-	count, err := s.repo.Count(ctx)
+func (s *KnowledgeBaseService) GetAllKnowledgeBase(ctx context.Context, userID uuid.UUID, page, pageSize int) (dto.KnowledgeBaseListResult, error) {
+	count, err := s.repo.CountByUserID(ctx, userID)
 	if err != nil {
-		s.log.Error("获取知识库数量失败", zap.Error(err))
+		s.log.Error("获取用户知识库数量失败", zap.String("user_id", userID.String()), zap.Error(err))
 		return dto.KnowledgeBaseListResult{}, err
 	}
-	s.log.Info("知识库总数", zap.Int64("count", count))
+	s.log.Info("用户知识库总数", zap.String("user_id", userID.String()), zap.Int64("count", count))
 
 	offset := (page - 1) * pageSize
-	kbs, err := s.repo.GetAll(ctx, pageSize, offset)
+	kbs, err := s.repo.GetByUserID(ctx, userID, pageSize, offset)
 	if err != nil {
-		s.log.Error("查询知识库失败", zap.Error(err))
+		s.log.Error("查询用户知识库失败", zap.String("user_id", userID.String()), zap.Error(err))
 		return dto.KnowledgeBaseListResult{}, err
 	}
-	s.log.Info("分页查询知识库成功", zap.Int("count", len(kbs)))
+	s.log.Info("分页查询用户知识库成功", zap.String("user_id", userID.String()), zap.Int("count", len(kbs)))
 
 	totalPages := int(count+int64(pageSize)-1) / pageSize
 
@@ -81,7 +82,7 @@ func (s *KnowledgeBaseService) GetKnowledgeBaseByID(ctx context.Context, id uuid
 	return kb, nil
 }
 
-func (s *KnowledgeBaseService) UpdateKnowledgeBase(ctx context.Context, id uuid.UUID, input *dto.UpdateKnowledgeBaseInput) (*models.KnowledgeBase, error) {
+func (s *KnowledgeBaseService) UpdateKnowledgeBase(ctx context.Context, id uuid.UUID, userID uuid.UUID, input *dto.UpdateKnowledgeBaseInput) (*models.KnowledgeBase, error) {
 	kb, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -92,11 +93,17 @@ func (s *KnowledgeBaseService) UpdateKnowledgeBase(ctx context.Context, id uuid.
 		return nil, err
 	}
 
-	if input.KBName != nil {
-		kb.Name = *input.KBName
+	// 验证权限：只有知识库所有者才能更新
+	if kb.UserID != userID {
+		s.log.Warn("无权限更新知识库", zap.String("kb_id", id.String()), zap.String("user_id", userID.String()), zap.String("owner_id", kb.UserID.String()))
+		return nil, fmt.Errorf("无权限操作此知识库")
 	}
-	if input.DatasetID != nil {
-		kb.DatasetID = input.DatasetID
+
+	if input.Name != nil {
+		kb.Name = *input.Name
+	}
+	if input.Description != nil {
+		kb.Description = *input.Description
 	}
 
 	err = s.repo.Update(ctx, kb)
@@ -108,13 +115,25 @@ func (s *KnowledgeBaseService) UpdateKnowledgeBase(ctx context.Context, id uuid.
 	return kb, nil
 }
 
-func (s *KnowledgeBaseService) DeleteKnowledgeBase(ctx context.Context, id uuid.UUID) error {
-	err := s.repo.Delete(ctx, id)
+func (s *KnowledgeBaseService) DeleteKnowledgeBase(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	kb, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			s.log.Warn("知识库不存在", zap.String("id", id.String()))
 			return fmt.Errorf("知识库不存在")
 		}
+		s.log.Error("查询知识库失败", zap.String("id", id.String()), zap.Error(err))
+		return err
+	}
+
+	// 验证权限：只有知识库所有者才能删除
+	if kb.UserID != userID {
+		s.log.Warn("无权限删除知识库", zap.String("kb_id", id.String()), zap.String("user_id", userID.String()), zap.String("owner_id", kb.UserID.String()))
+		return fmt.Errorf("无权限操作此知识库")
+	}
+
+	err = s.repo.Delete(ctx, id)
+	if err != nil {
 		s.log.Error("删除知识库失败", zap.String("id", id.String()), zap.Error(err))
 		return err
 	}

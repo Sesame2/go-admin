@@ -24,9 +24,10 @@ logger:
   output: stdout
 
 s3:
-  endpoint: http://localhost:9000
+  endpoint: localhost:9000
   access_key: root
   secret_key: 123456789
+  bucket: documents
 
 rabbitmq:
   host: localhost
@@ -34,3 +35,10 @@ rabbitmq:
   username: admin
   password: 123456789
   vhost: /
+  exchange_name: go_admin_exchange
+  exchange_type: topic
+  durable: true
+
+rag_service:
+  base_url: http://localhost:8000
+  timeout: 300

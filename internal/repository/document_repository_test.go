@@ -12,18 +12,23 @@ import (
 
 // testDocument 测试用简化的文档模型
 type testDocument struct {
-	ID              string `gorm:"primaryKey"`
-	Name            string `gorm:"not null"`
-	Description     string
-	KnowledgeBaseID string
-	FileName        string
-	FileSize        int64 `gorm:"default:0"`
-	FileType        string
-	Status          string `gorm:"default:'pending'"`
-	UserID          string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	DeletedAt       gorm.DeletedAt `gorm:"index"`
+	ID                string `gorm:"primaryKey"`
+	Name              string `gorm:"not null"`
+	Description       string
+	KnowledgeBaseID   string
+	FileName          string
+	FileSize          int64 `gorm:"default:0"`
+	FileType          string
+	Status            string `gorm:"default:'pending'"`
+	MinioPath         string
+	ChunkCount        int
+	AtomQuestionCount int
+	ErrorMessage      string
+	UserID            string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	ProcessedAt       *time.Time
+	DeletedAt         gorm.DeletedAt `gorm:"index"`
 }
 
 func (testDocument) TableName() string {
@@ -281,4 +286,182 @@ func TestDocumentRepository_GetByUserID(t *testing.T) {
 	err := mockDB.db.Where("user_id = ?", userID).Find(&userDocs).Error
 	assert.NoError(t, err)
 	assert.Len(t, userDocs, 3)
+}
+func TestDocumentRepository_UpdateStatus(t *testing.T) {
+	mockDB := setupDocumentTestDB(t)
+	defer mockDB.Close()
+
+	docID := uuid.New().String()
+	doc := &testDocument{
+		ID:              docID,
+		Name:            "Test Document",
+		Description:     "Test Description",
+		KnowledgeBaseID: uuid.New().String(),
+		Status:          "pending",
+	}
+	err := mockDB.db.Create(doc).Error
+	require.NoError(t, err)
+
+	// 测试更新状态
+	err = mockDB.db.Model(&testDocument{}).Where("id = ?", docID).Update("status", "parsing").Error
+	assert.NoError(t, err)
+
+	var updatedDoc testDocument
+	err = mockDB.db.First(&updatedDoc, "id = ?", docID).Error
+	assert.NoError(t, err)
+	assert.Equal(t, "parsing", updatedDoc.Status)
+}
+
+func TestDocumentRepository_UpdateStatusWithError(t *testing.T) {
+	mockDB := setupDocumentTestDB(t)
+	defer mockDB.Close()
+
+	docID := uuid.New().String()
+	doc := &testDocument{
+		ID:              docID,
+		Name:            "Test Document",
+		Description:     "Test Description",
+		KnowledgeBaseID: uuid.New().String(),
+		Status:          "pending",
+	}
+	err := mockDB.db.Create(doc).Error
+	require.NoError(t, err)
+
+	// 测试更新状态带错误信息
+	err = mockDB.db.Model(&testDocument{}).Where("id = ?", docID).Updates(map[string]interface{}{
+		"status":        "failed",
+		"error_message": "解析失败",
+	}).Error
+	assert.NoError(t, err)
+
+	var updatedDoc testDocument
+	err = mockDB.db.First(&updatedDoc, "id = ?", docID).Error
+	assert.NoError(t, err)
+	assert.Equal(t, "failed", updatedDoc.Status)
+	assert.Equal(t, "解析失败", updatedDoc.ErrorMessage)
+}
+
+func TestDocumentRepository_UpdateProcessingResult(t *testing.T) {
+	mockDB := setupDocumentTestDB(t)
+	defer mockDB.Close()
+
+	docID := uuid.New().String()
+	doc := &testDocument{
+		ID:              docID,
+		Name:            "Test Document",
+		Description:     "Test Description",
+		KnowledgeBaseID: uuid.New().String(),
+		Status:          "parsing",
+	}
+	err := mockDB.db.Create(doc).Error
+	require.NoError(t, err)
+
+	// 测试更新处理结果
+	now := time.Now()
+	err = mockDB.db.Model(&testDocument{}).Where("id = ?", docID).Updates(map[string]interface{}{
+		"status":              "completed",
+		"chunk_count":         10,
+		"atom_question_count": 25,
+		"processed_at":        &now,
+	}).Error
+	assert.NoError(t, err)
+
+	var updatedDoc testDocument
+	err = mockDB.db.First(&updatedDoc, "id = ?", docID).Error
+	assert.NoError(t, err)
+	assert.Equal(t, "completed", updatedDoc.Status)
+	assert.Equal(t, 10, updatedDoc.ChunkCount)
+	assert.Equal(t, 25, updatedDoc.AtomQuestionCount)
+	assert.NotNil(t, updatedDoc.ProcessedAt)
+}
+
+func TestDocumentRepository_GetByStatus(t *testing.T) {
+	mockDB := setupDocumentTestDB(t)
+	defer mockDB.Close()
+
+	kbID := uuid.New().String()
+
+	// 创建不同状态的文档
+	statuses := []string{"pending", "parsing", "completed", "failed", "completed"}
+	for _, status := range statuses {
+		doc := &testDocument{
+			ID:              uuid.New().String(),
+			Name:            "Document",
+			Description:     "Description",
+			KnowledgeBaseID: kbID,
+			Status:          status,
+		}
+		err := mockDB.db.Create(doc).Error
+		require.NoError(t, err)
+	}
+
+	// 测试按状态查询
+	var completedDocs []testDocument
+	err := mockDB.db.Where("status = ?", "completed").Find(&completedDocs).Error
+	assert.NoError(t, err)
+	assert.Len(t, completedDocs, 2)
+
+	var pendingDocs []testDocument
+	err = mockDB.db.Where("status = ?", "pending").Find(&pendingDocs).Error
+	assert.NoError(t, err)
+	assert.Len(t, pendingDocs, 1)
+}
+
+func TestDocumentRepository_DeleteByKnowledgeBase(t *testing.T) {
+	mockDB := setupDocumentTestDB(t)
+	defer mockDB.Close()
+
+	kbID := uuid.New().String()
+
+	// 创建多个文档
+	for i := 0; i < 3; i++ {
+		doc := &testDocument{
+			ID:              uuid.New().String(),
+			Name:            "KB Document",
+			Description:     "Description",
+			KnowledgeBaseID: kbID,
+			Status:          "pending",
+		}
+		err := mockDB.db.Create(doc).Error
+		require.NoError(t, err)
+	}
+
+	// 确认文档创建成功
+	var count int64
+	err := mockDB.db.Model(&testDocument{}).Where("knowledge_base_id = ?", kbID).Count(&count).Error
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), count)
+
+	// 删除知识库下的所有文档
+	err = mockDB.db.Where("knowledge_base_id = ?", kbID).Delete(&testDocument{}).Error
+	assert.NoError(t, err)
+
+	// 验证文档已删除
+	err = mockDB.db.Model(&testDocument{}).Where("knowledge_base_id = ?", kbID).Count(&count).Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+}
+
+func TestDocumentRepository_WithMinioPath(t *testing.T) {
+	mockDB := setupDocumentTestDB(t)
+	defer mockDB.Close()
+
+	docID := uuid.New().String()
+	doc := &testDocument{
+		ID:              docID,
+		Name:            "Test Document",
+		Description:     "Test Description",
+		KnowledgeBaseID: uuid.New().String(),
+		FileName:        "test.pdf",
+		FileType:        "application/pdf",
+		MinioPath:       "documents/kb-123/test.pdf",
+		Status:          "pending",
+	}
+	err := mockDB.db.Create(doc).Error
+	require.NoError(t, err)
+
+	var foundDoc testDocument
+	err = mockDB.db.First(&foundDoc, "id = ?", docID).Error
+	assert.NoError(t, err)
+	assert.Equal(t, "documents/kb-123/test.pdf", foundDoc.MinioPath)
 }

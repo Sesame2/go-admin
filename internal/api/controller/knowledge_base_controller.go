@@ -36,8 +36,25 @@ func NewKnowledgeBaseController(service *services.KnowledgeBaseService) *Knowled
 // @Failure      500  {object}  object{error=string, detail=string}  "系统内部错误"
 // @Router       /knowledge_bases [post]
 func (c *KnowledgeBaseController) CreateKnowledgeBase(ctx *gin.Context) {
-	var input *dto.CreateKnowledgeBaseInput
+	// 从 JWT 中获取用户 ID
+	userIDStr, exists := ctx.Get("userID")
+	if !exists {
+		c.log.Error("无法获取用户ID")
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "未授权，请先登录",
+		})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.log.Error("无效的用户ID格式", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "无效的用户ID",
+		})
+		return
+	}
 
+	var input *dto.CreateKnowledgeBaseInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		c.log.Error("创建知识库验证参数失败", zap.Error(err))
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -45,7 +62,8 @@ func (c *KnowledgeBaseController) CreateKnowledgeBase(ctx *gin.Context) {
 		})
 		return
 	}
-	kb, err := c.service.CreateKnowledgeBase(ctx, input)
+
+	kb, err := c.service.CreateKnowledgeBase(ctx, userID, input)
 	if err != nil {
 		c.log.Error("创建知识库失败", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -69,6 +87,24 @@ func (c *KnowledgeBaseController) CreateKnowledgeBase(ctx *gin.Context) {
 // @Failure      500  {object}  object{error=string}  "服务器错误"
 // @Router       /knowledge_bases [get]
 func (c *KnowledgeBaseController) GetAllKnowledgeBase(ctx *gin.Context) {
+	// 从 JWT 中获取用户 ID
+	userIDStr, exists := ctx.Get("userID")
+	if !exists {
+		c.log.Error("无法获取用户ID")
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "未授权，请先登录",
+		})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.log.Error("无效的用户ID格式", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "无效的用户ID",
+		})
+		return
+	}
+
 	pageStr := ctx.DefaultQuery("page", "1")
 	pageSizeStr := ctx.DefaultQuery("page_size", "10")
 	page, err := strconv.Atoi(pageStr)
@@ -87,7 +123,7 @@ func (c *KnowledgeBaseController) GetAllKnowledgeBase(ctx *gin.Context) {
 		zap.Int("page", page),
 		zap.Int("page_size", pageSize))
 
-	kbs, err := c.service.GetAllKnowledgeBase(ctx, page, pageSize)
+	kbs, err := c.service.GetAllKnowledgeBase(ctx, userID, page, pageSize)
 	if err != nil {
 		c.log.Error("获取知识库列表失败", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -152,6 +188,24 @@ func (c *KnowledgeBaseController) GetKnowledgeBaseByID(ctx *gin.Context) {
 // @Failure      500  {object}  object{error=string}  "服务器错误"
 // @Router       /knowledge_bases/{id} [put]
 func (c *KnowledgeBaseController) UpdateKnowledgeBase(ctx *gin.Context) {
+	// 从 JWT 中获取用户 ID
+	userIDStr, exists := ctx.Get("userID")
+	if !exists {
+		c.log.Error("无法获取用户ID")
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "未授权，请先登录",
+		})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.log.Error("无效的用户ID格式", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "无效的用户ID",
+		})
+		return
+	}
+
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -171,7 +225,7 @@ func (c *KnowledgeBaseController) UpdateKnowledgeBase(ctx *gin.Context) {
 		return
 	}
 
-	kb, err := c.service.UpdateKnowledgeBase(ctx, id, &input)
+	kb, err := c.service.UpdateKnowledgeBase(ctx, id, userID, &input)
 	if err != nil {
 		c.log.Error("更新知识库失败", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -195,6 +249,24 @@ func (c *KnowledgeBaseController) UpdateKnowledgeBase(ctx *gin.Context) {
 // @Failure      500  {object}  object{error=string}  "服务器错误"
 // @Router       /knowledge_bases/{id} [delete]
 func (c *KnowledgeBaseController) DeleteKnowledgeBase(ctx *gin.Context) {
+	// 从 JWT 中获取用户 ID
+	userIDStr, exists := ctx.Get("userID")
+	if !exists {
+		c.log.Error("无法获取用户ID")
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "未授权，请先登录",
+		})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.log.Error("无效的用户ID格式", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "无效的用户ID",
+		})
+		return
+	}
+
 	idStr := ctx.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -205,7 +277,7 @@ func (c *KnowledgeBaseController) DeleteKnowledgeBase(ctx *gin.Context) {
 		return
 	}
 
-	err = c.service.DeleteKnowledgeBase(ctx, id)
+	err = c.service.DeleteKnowledgeBase(ctx, id, userID)
 	if err != nil {
 		c.log.Error("删除知识库失败", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, gin.H{

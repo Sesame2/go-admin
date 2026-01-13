@@ -2,10 +2,14 @@ basePath: /api
 definitions:
   dto.CreateKnowledgeBaseInput:
     properties:
-      dataset_id:
+      description:
         type: string
-      knowledgebase_name:
+      name:
+        maxLength: 255
+        minLength: 1
         type: string
+    required:
+    - name
     type: object
   dto.CreateUserInput:
     properties:
@@ -15,6 +19,10 @@ definitions:
         minLength: 6
         type: string
       role:
+        enum:
+        - admin
+        - user
+        - guest
         type: string
       username:
         maxLength: 50
@@ -69,22 +77,31 @@ definitions:
     - password
     - username
     type: object
+  dto.ParseDocumentInput:
+    properties:
+      document_id:
+        type: string
+    required:
+    - document_id
+    type: object
   dto.UpdateDocumentInput:
     properties:
-      description:
-        type: string
-      file_name:
-        type: string
-      name:
+      atom_question_count:
+        type: integer
+      chunk_count:
+        type: integer
+      error_message:
         type: string
       status:
         type: string
     type: object
   dto.UpdateKnowledgeBaseInput:
     properties:
-      dataset_id:
+      description:
         type: string
-      knowledgebase_name:
+      name:
+        maxLength: 255
+        minLength: 1
         type: string
     type: object
   dto.UpdateUserInput:
@@ -102,17 +119,26 @@ definitions:
     type: object
   models.Document:
     properties:
-      created_at:
-        type: string
-      description:
-        type: string
-      doc_num:
+      atom_question_count:
+        description: 原子问题数量
         type: integer
-      file_name:
+      chunk_count:
+        description: 处理结果统计
+        type: integer
+      created_at:
+        description: 时间戳
+        type: string
+      error_message:
+        description: 错误信息
         type: string
       file_size:
+        description: 文件大小（字节）
         type: integer
       file_type:
+        description: pdf, docx, pptx, markdown
+        type: string
+      filename:
+        description: 文档基本信息
         type: string
       id:
         type: string
@@ -120,27 +146,64 @@ definitions:
         $ref: '#/definitions/models.KnowledgeBase'
       knowledge_base_id:
         type: string
-      name:
+      meta_data:
+        allOf:
+        - $ref: '#/definitions/models.JSONMap'
+        description: 元数据（自定义扩展字段）
+      minio_path:
+        description: MinIO 存储路径
         type: string
       owner:
         allOf:
         - $ref: '#/definitions/models.User'
         description: 关联
-      status:
+      processed_at:
+        description: 处理完成时间
         type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/models.DocumentStatus'
+        description: 处理状态 - 使用 PostgreSQL ENUM 类型（与 Python 模型保持一致）
       updated_at:
         type: string
       user_id:
         type: string
     type: object
+  models.DocumentStatus:
+    enum:
+    - pending
+    - downloading
+    - parsing
+    - chunking
+    - tagging
+    - embedding
+    - completed
+    - failed
+    type: string
+    x-enum-comments:
+      DocumentStatusChunking: 分片中
+      DocumentStatusCompleted: 处理完成
+      DocumentStatusDownloading: 下载中
+      DocumentStatusEmbedding: 向量化中
+      DocumentStatusFailed: 处理失败
+      DocumentStatusParsing: 解析中
+      DocumentStatusPending: 待处理
+      DocumentStatusTagging: 原子问题生成中
+    x-enum-varnames:
+    - DocumentStatusPending
+    - DocumentStatusDownloading
+    - DocumentStatusParsing
+    - DocumentStatusChunking
+    - DocumentStatusTagging
+    - DocumentStatusEmbedding
+    - DocumentStatusCompleted
+    - DocumentStatusFailed
   models.JSONMap:
     additionalProperties: true
     type: object
   models.KnowledgeBase:
     properties:
       created_at:
-        type: string
-      dataset_id:
         type: string
       description:
         type: string
@@ -150,13 +213,17 @@ definitions:
         type: integer
       id:
         type: string
-      model:
-        type: string
       name:
         type: string
       tags:
         $ref: '#/definitions/models.JSONMap'
       updated_at:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: 关联
+      user_id:
         type: string
     type: object
   models.User:
@@ -287,6 +354,10 @@ paths:
         in: query
         name: page_size
         type: integer
+      - description: 文档状态筛选
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
@@ -450,6 +521,87 @@ paths:
       security:
       - Bearer: []
       summary: 更新文档
+      tags:
+      - 文档模块
+  /documents/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: 获取文档的预签名下载URL
+      parameters:
+      - description: 文档ID (UUID格式)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 下载URL
+          schema:
+            properties:
+              url:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取文档下载URL
+      tags:
+      - 文档模块
+  /documents/parse:
+    post:
+      consumes:
+      - application/json
+      description: 触发文档解析任务（异步处理）
+      parameters:
+      - description: 解析请求
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ParseDocumentInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 解析任务已提交
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 解析文档
       tags:
       - 文档模块
   /documents/upload:
@@ -704,6 +856,56 @@ paths:
       summary: 更新知识库
       tags:
       - 知识库模块
+  /retrieval/stream:
+    get:
+      consumes:
+      - application/json
+      description: 通过SSE流式返回检索和问答结果
+      parameters:
+      - description: 用户问题
+        in: query
+        name: question
+        required: true
+        type: string
+      - description: 知识库ID
+        in: query
+        name: knowledge_base_id
+        required: true
+        type: string
+      - description: 最大迭代次数，默认5
+        in: query
+        name: max_iterations
+        type: integer
+      - description: 是否流式输出答案，默认true
+        in: query
+        name: stream_answer
+        type: boolean
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE事件流
+          schema:
+            type: string
+        "400":
+          description: 请求参数错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 流式检索问答
+      tags:
+      - 检索模块
   /users:
     get:
       consumes:

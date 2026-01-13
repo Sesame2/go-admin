@@ -8,12 +8,13 @@ import (
 
 // Config 应用配置结构
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	Logger   LoggerConfig   `mapstructure:"logger"`
-	S3       S3Config       `mapstructure:"s3"`
-	RabbitMQ RabbitMQConfig `mapstructure:"rabbitmq"`
+	Server     ServerConfig     `mapstructure:"server"`
+	Database   DatabaseConfig   `mapstructure:"database"`
+	JWT        JWTConfig        `mapstructure:"jwt"`
+	Logger     LoggerConfig     `mapstructure:"logger"`
+	S3         S3Config         `mapstructure:"s3"`
+	RabbitMQ   RabbitMQConfig   `mapstructure:"rabbitmq"`
+	RAGService RAGServiceConfig `mapstructure:"rag_service"`
 }
 
 // ServerConfig 服务器配置
@@ -65,6 +66,12 @@ type RabbitMQConfig struct {
 	ExchangeName string `mapstructure:"exchange_name"`
 	ExchangeType string `mapstructure:"exchange_type"`
 	Durable      bool   `mapstructure:"durable"`
+}
+
+// RAGServiceConfig RAG Python服务配置
+type RAGServiceConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+	Timeout int    `mapstructure:"timeout"` // 秒
 }
 
 var (

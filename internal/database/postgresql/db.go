@@ -63,12 +63,34 @@ func (p *PostgreSQL) Close() error {
 
 // Migrate 执行数据库迁移
 func (p *PostgreSQL) Migrate(ctx context.Context) error {
+	// 启用 pgvector 扩展
+	p.db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
+
+	// 创建 document_status ENUM 类型（与 Python 模型保持一致）
+	p.db.Exec(`
+		DO $$ BEGIN
+			CREATE TYPE document_status AS ENUM (
+				'pending',
+				'downloading', 
+				'parsing',
+				'chunking',
+				'tagging',
+				'embedding',
+				'completed',
+				'failed'
+			);
+		EXCEPTION
+			WHEN duplicate_object THEN null;
+		END $$;
+	`)
+
 	// 自动迁移所有模型
 	err := p.db.WithContext(ctx).AutoMigrate(
 		&models.User{},
-		&models.Document{},
 		&models.KnowledgeBase{},
-		&models.KnowledgeChunk{},
+		&models.Document{},
+		&models.DocumentChunk{},
+		&models.AtomQuestion{},
 	)
 	if err != nil {
 		return fmt.Errorf("数据库迁移失败：%w", err)

@@ -15,8 +15,8 @@ type testKnowledgeBase struct {
 	ID            string `gorm:"primaryKey"`
 	Name          string `gorm:"not null"`
 	Description   string
-	Model         string
-	DocumentCount int64 `gorm:"default:0"`
+	UserID        string `gorm:"not null;index"`
+	DocumentCount int64  `gorm:"default:0"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	DeletedAt     gorm.DeletedAt `gorm:"index"`
@@ -45,7 +45,7 @@ func TestKnowledgeBaseRepository_Create(t *testing.T) {
 		ID:          uuid.New().String(),
 		Name:        "Test KB",
 		Description: "Test Knowledge Base",
-		Model:       "gpt-4",
+		UserID:      uuid.New().String(),
 	}
 
 	err := mockDB.db.Create(kb).Error
@@ -62,7 +62,7 @@ func TestKnowledgeBaseRepository_GetByID(t *testing.T) {
 		ID:          kbID,
 		Name:        "Test KB",
 		Description: "Test Knowledge Base",
-		Model:       "gpt-4",
+		UserID:      uuid.New().String(),
 	}
 	err := mockDB.db.Create(kb).Error
 	require.NoError(t, err)
@@ -87,10 +87,11 @@ func TestKnowledgeBaseRepository_GetAll(t *testing.T) {
 	mockDB := setupKnowledgeBaseTestDB(t)
 	defer mockDB.Close()
 
+	userID := uuid.New().String()
 	kbs := []testKnowledgeBase{
-		{ID: uuid.New().String(), Name: "KB 1", Description: "Description 1", Model: "gpt-4"},
-		{ID: uuid.New().String(), Name: "KB 2", Description: "Description 2", Model: "gpt-4"},
-		{ID: uuid.New().String(), Name: "KB 3", Description: "Description 3", Model: "gpt-4"},
+		{ID: uuid.New().String(), Name: "KB 1", Description: "Description 1", UserID: userID},
+		{ID: uuid.New().String(), Name: "KB 2", Description: "Description 2", UserID: userID},
+		{ID: uuid.New().String(), Name: "KB 3", Description: "Description 3", UserID: userID},
 	}
 
 	for _, kb := range kbs {
@@ -108,12 +109,13 @@ func TestKnowledgeBaseRepository_GetAll_Pagination(t *testing.T) {
 	mockDB := setupKnowledgeBaseTestDB(t)
 	defer mockDB.Close()
 
+	userID := uuid.New().String()
 	for i := 0; i < 5; i++ {
 		kb := &testKnowledgeBase{
 			ID:          uuid.New().String(),
 			Name:        "KB",
 			Description: "Description",
-			Model:       "gpt-4",
+			UserID:      userID,
 		}
 		err := mockDB.db.Create(kb).Error
 		require.NoError(t, err)
@@ -139,12 +141,13 @@ func TestKnowledgeBaseRepository_Count(t *testing.T) {
 	mockDB := setupKnowledgeBaseTestDB(t)
 	defer mockDB.Close()
 
+	userID := uuid.New().String()
 	for i := 0; i < 3; i++ {
 		kb := &testKnowledgeBase{
 			ID:          uuid.New().String(),
 			Name:        "KB",
 			Description: "Description",
-			Model:       "gpt-4",
+			UserID:      userID,
 		}
 		err := mockDB.db.Create(kb).Error
 		require.NoError(t, err)
@@ -165,7 +168,7 @@ func TestKnowledgeBaseRepository_Update(t *testing.T) {
 		ID:          kbID,
 		Name:        "Test KB",
 		Description: "Test Knowledge Base",
-		Model:       "gpt-4",
+		UserID:      uuid.New().String(),
 	}
 	err := mockDB.db.Create(kb).Error
 	require.NoError(t, err)
@@ -191,7 +194,7 @@ func TestKnowledgeBaseRepository_Delete(t *testing.T) {
 		ID:          kbID,
 		Name:        "Test KB",
 		Description: "Test Knowledge Base",
-		Model:       "gpt-4",
+		UserID:      uuid.New().String(),
 	}
 	err := mockDB.db.Create(kb).Error
 	require.NoError(t, err)
@@ -213,7 +216,7 @@ func TestKnowledgeBaseRepository_Exist(t *testing.T) {
 		ID:          kbID,
 		Name:        "Test KB",
 		Description: "Test Knowledge Base",
-		Model:       "gpt-4",
+		UserID:      uuid.New().String(),
 	}
 	err := mockDB.db.Create(kb).Error
 	require.NoError(t, err)
@@ -237,7 +240,7 @@ func TestKnowledgeBaseRepository_IncrementDocumentCount(t *testing.T) {
 		ID:            kbID,
 		Name:          "Test KB",
 		Description:   "Test Knowledge Base",
-		Model:         "gpt-4",
+		UserID:        uuid.New().String(),
 		DocumentCount: 0,
 	}
 	err := mockDB.db.Create(kb).Error
@@ -270,7 +273,7 @@ func TestKnowledgeBaseRepository_DecrementDocumentCount(t *testing.T) {
 		ID:            kbID,
 		Name:          "Test KB",
 		Description:   "Test Knowledge Base",
-		Model:         "gpt-4",
+		UserID:        uuid.New().String(),
 		DocumentCount: 5,
 	}
 	err := mockDB.db.Create(kb).Error
@@ -295,7 +298,7 @@ func TestKnowledgeBaseRepository_WithTransaction(t *testing.T) {
 			ID:          uuid.New().String(),
 			Name:        "TX KB",
 			Description: "Transaction Test",
-			Model:       "gpt-4",
+			UserID:      uuid.New().String(),
 		}
 		return tx.Create(kb).Error
 	})

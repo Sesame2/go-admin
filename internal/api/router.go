@@ -18,14 +18,22 @@ type API struct {
 	UserController          *controller.UserController
 	AuthController          *controller.AuthController
 	KnowledgeBaseController *controller.KnowledgeBaseController
+	DocumentController      *controller.DocumentController
 	Config                  *config.Config
 }
 
-func NewAPI(config *config.Config, userController *controller.UserController, authController *controller.AuthController, kbController *controller.KnowledgeBaseController) *API {
+func NewAPI(
+	config *config.Config,
+	userController *controller.UserController,
+	authController *controller.AuthController,
+	kbController *controller.KnowledgeBaseController,
+	docController *controller.DocumentController,
+) *API {
 	return &API{
 		UserController:          userController,
 		AuthController:          authController,
 		KnowledgeBaseController: kbController,
+		DocumentController:      docController,
 		Config:                  config,
 	}
 }
@@ -42,29 +50,62 @@ func (api *API) SetupRouter() *gin.Engine {
 
 	r.Use(middleware.CORS())
 	r.Use(middleware.LoggerMiddleware())
+
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/", CallRoot)
-	// // 用户相关路由
-	userGroup := r.Group("/api/users")
-	authGroup := r.Group("/api/auth")
-	knowledgebaseGroup := r.Group("/api/knowledge_bases")
-	userGroup.Use(middleware.JWTAuthMiddleware(api.Config.JWT.SecretKey))
-	{
-		userGroup.GET("/", api.UserController.GetAllUser)
-		userGroup.GET("/:id", api.UserController.GetUser)
-		userGroup.POST("/", api.UserController.CreateUser)
-		userGroup.PUT("/:id", api.UserController.UpdateUser)
-		userGroup.DELETE("/:id", api.UserController.DeleteUser)
 
+	// API 路由组
+	apiGroup := r.Group("/api")
+
+	// 公开路由（不需要认证）
+	authGroup := apiGroup.Group("/auth")
+	{
 		authGroup.POST("/login", api.AuthController.Login)
 		authGroup.POST("/refresh", api.AuthController.Refresh)
+	}
 
-		knowledgebaseGroup.POST("/", api.KnowledgeBaseController.CreateKnowledgeBase)
-		knowledgebaseGroup.GET("/", api.KnowledgeBaseController.GetAllKnowledgeBase)
-		knowledgebaseGroup.GET("/:id", api.KnowledgeBaseController.GetKnowledgeBaseByID)
-		knowledgebaseGroup.PUT("/:id", api.KnowledgeBaseController.UpdateKnowledgeBase)
-		knowledgebaseGroup.DELETE("/:id", api.KnowledgeBaseController.DeleteKnowledgeBase)
+	// 需要认证的路由
+	protectedGroup := apiGroup.Group("")
+	protectedGroup.Use(middleware.JWTAuthMiddleware(api.Config.JWT.SecretKey))
+	{
+		// 用户管理
+		userGroup := protectedGroup.Group("/users")
+		{
+			userGroup.GET("", api.UserController.GetAllUser)
+			userGroup.GET("/:id", api.UserController.GetUser)
+			userGroup.POST("", api.UserController.CreateUser)
+			userGroup.PUT("/:id", api.UserController.UpdateUser)
+			userGroup.DELETE("/:id", api.UserController.DeleteUser)
+		}
+
+		// 知识库管理
+		kbGroup := protectedGroup.Group("/knowledge_bases")
+		{
+			kbGroup.POST("", api.KnowledgeBaseController.CreateKnowledgeBase)
+			kbGroup.GET("", api.KnowledgeBaseController.GetAllKnowledgeBase)
+			kbGroup.GET("/:id", api.KnowledgeBaseController.GetKnowledgeBaseByID)
+			kbGroup.PUT("/:id", api.KnowledgeBaseController.UpdateKnowledgeBase)
+			kbGroup.DELETE("/:id", api.KnowledgeBaseController.DeleteKnowledgeBase)
+		}
+
+		// 文档管理
+		docGroup := protectedGroup.Group("/documents")
+		{
+			docGroup.POST("/upload", api.DocumentController.UploadDocument)
+			docGroup.POST("/parse", api.DocumentController.ParseDocument)
+			docGroup.GET("", api.DocumentController.ListDocuments)
+			docGroup.GET("/:id", api.DocumentController.GetDocument)
+			docGroup.GET("/:id/download", api.DocumentController.GetDocumentDownloadURL)
+			docGroup.PUT("/:id", api.DocumentController.UpdateDocument)
+			docGroup.DELETE("/:id", api.DocumentController.DeleteDocument)
+		}
+
+		// 检索问答
+		retrievalGroup := protectedGroup.Group("/retrieval")
+		{
+			retrievalGroup.GET("/stream", api.DocumentController.StreamRetrieve)
+		}
 	}
 
 	return r

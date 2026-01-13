@@ -39,14 +39,16 @@ type KnowledgeBase struct {
 	ID            uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	Name          string         `gorm:"type:varchar(255);not null" json:"name"`
 	Description   string         `gorm:"type:text" json:"description"`
-	Model         string         `gorm:"type:varchar(100)" json:"model"`
-	DatasetID     *string        `gorm:"type:varchar(255)" json:"dataset_id,omitempty"`
+	UserID        uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	Tags          JSONMap        `gorm:"type:jsonb" json:"tags,omitempty"`
 	DocNum        int64          `gorm:"default:0" json:"doc_num"`
 	DocumentCount int64          `gorm:"default:0" json:"document_count"`
 	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt     time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// 关联
+	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
 // TableName 指定表名

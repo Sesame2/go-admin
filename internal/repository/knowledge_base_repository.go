@@ -65,6 +65,34 @@ func (r *KnowledgeBaseRepository) GetAll(ctx context.Context, limit, offset int)
 	return kbs, nil
 }
 
+// GetByUserID 根据用户ID获取知识库列表
+func (r *KnowledgeBaseRepository) GetByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.KnowledgeBase, error) {
+	var kbs []*models.KnowledgeBase
+	err := r.db.DB().WithContext(ctx).
+		Where("user_id = ?", userID).
+		Limit(limit).Offset(offset).
+		Order("created_at DESC").
+		Find(&kbs).Error
+	if err != nil {
+		r.log.Error("根据用户ID获取知识库列表失败", zap.String("user_id", userID.String()), zap.Error(err))
+		return nil, err
+	}
+	r.log.Info("根据用户ID获取知识库列表成功", zap.String("user_id", userID.String()), zap.Int("count", len(kbs)))
+	return kbs, nil
+}
+
+// CountByUserID 统计用户的知识库总数
+func (r *KnowledgeBaseRepository) CountByUserID(ctx context.Context, userID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.DB().WithContext(ctx).Model(&models.KnowledgeBase{}).Where("user_id = ?", userID).Count(&count).Error
+	if err != nil {
+		r.log.Error("统计用户知识库总数失败", zap.String("user_id", userID.String()), zap.Error(err))
+		return 0, err
+	}
+	r.log.Info("用户知识库总数统计完成", zap.String("user_id", userID.String()), zap.Int64("count", count))
+	return count, nil
+}
+
 // Exist 检查知识库是否存在
 func (r *KnowledgeBaseRepository) Exist(ctx context.Context, id uuid.UUID) (bool, error) {
 	var count int64
